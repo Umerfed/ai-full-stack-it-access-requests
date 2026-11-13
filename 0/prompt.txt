@@ -1,0 +1,5 @@
+rror: The following untracked working tree files would be overwritten by merge:
+        .gitignore
+Please move or remove them before you merge.
+Aborting
+Merge with strategy ort failed.   got this msg with on 4 th step
