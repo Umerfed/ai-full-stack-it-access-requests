@@ -1,0 +1,1 @@
+check what the env.example to run the gitignore command
