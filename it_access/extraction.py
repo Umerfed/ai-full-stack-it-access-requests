@@ -71,7 +71,7 @@ def _check_schema(value, schema, path="extraction"):
             _check_schema(item, schema["items"], path)
 
 
-def validate_response(response: ModelResponse, message: str) -> dict:
+def validate_response(response: ModelResponse, message: str, *, schema: dict | None = None) -> dict:
     """Return a validated object, or raise without exposing partial model output."""
     if not isinstance(response, ModelResponse):
         raise ExtractionError("invalid-response", "Invalid provider envelope; check provider integration.")
@@ -88,7 +88,8 @@ def validate_response(response: ModelResponse, message: str) -> dict:
         )
     except (ValueError, RecursionError):
         raise ExtractionError("invalid-json", "Provider returned invalid JSON; retry extraction.") from None
-    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    if schema is None:
+        schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     _check_schema(extraction, schema)
 
     for field, value in extraction.items():
@@ -124,11 +125,16 @@ def validate_response(response: ModelResponse, message: str) -> dict:
     return extraction
 
 
-def extract(export: dict, provider: Provider) -> dict:
-    """Extract from message alone; export metadata is never model input."""
+def message_from_export(export: dict) -> str:
+    """Validate the message field without deriving any facts from metadata."""
     if (not isinstance(export, dict) or not isinstance(export.get("message"), str)
             or not export["message"].strip()):
         raise ExtractionError("invalid-input", "Export must contain a nonempty message string.")
-    message = export["message"]
+    return export["message"]
+
+
+def extract(export: dict, provider: Provider) -> dict:
+    """Extract from message alone; export metadata is never model input."""
+    message = message_from_export(export)
     response = provider.complete(message, instructions=instructions())
     return validate_response(response, message)

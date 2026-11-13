@@ -31,13 +31,16 @@ class Provider(Protocol):
 class MockProvider:
     """Replay a UTF-8 JSON fixture without credentials or network access."""
 
-    def __init__(self, fixture_path: str | Path):
-        self.fixture_path = Path(fixture_path)
+    def __init__(self, fixture_path: str | Path | None = None, *, fixture_text: str | None = None):
+        if (fixture_path is None) == (fixture_text is None):
+            raise ValueError("Supply exactly one fixture path or saved fixture text.")
+        self.fixture_path = Path(fixture_path) if fixture_path is not None else None
+        self.fixture_text = fixture_text
 
     def complete(self, message: str, *, instructions: str = "") -> ModelResponse:
         # Message is deliberately ignored: fixtures are explicitly selected.
         try:
-            raw = self.fixture_path.read_text(encoding="utf-8")
+            raw = self.fixture_text if self.fixture_text is not None else self.fixture_path.read_text(encoding="utf-8")
         except OSError:
             raise ProviderError(
                 "Cannot read mock fixture; check --fixture points to a readable file."

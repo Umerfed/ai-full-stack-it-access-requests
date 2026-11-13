@@ -1,7 +1,7 @@
 # Northstar IT access request intake
 
-Work in progress: steps 1–2 provide an offline mock provider, CLI fixture replay,
-and an extraction validation layer with a versioned prompt.
+Work in progress: steps 1–3 provide an offline mock provider, validated extraction,
+and persistent intake with version history and shared local processing.
 The build sequence and requirements are in [planning/plan.md](planning/plan.md)
 and [planning/spec.md](planning/spec.md); the assignment is in [CHALLENGE.md](CHALLENGE.md).
 
@@ -62,7 +62,54 @@ cannot establish whether a model interpreted every fact or conflict correctly.
 Correction/change/conflict fixtures exercise the contract, not live model accuracy.
 Step 2 test evidence is in `planning/step-02-red.txt` and `planning/step-02-green.txt`.
 
-Intake, review queue, persistence, retry/resume, live provider configuration,
-and accuracy commands are planned for later steps and
-are not available yet. The facilitator-provided `API_KEY` will be used by the
-live integration. Do not commit credentials or virtual environments.
+Run persistent mock intake on two sample exports, then inspect current results
+or all attempts for a document:
+
+```bash
+python3 -m it_access intake materials/requests/IT-001.json materials/requests/IT-003.json --fixture-map tests/mock_responses/fixture-map.json --db var/intake.db
+python3 -m it_access records --db var/intake.db
+python3 -m it_access history IT-001.json --db var/intake.db
+```
+
+An input may be a file or directory; directory inputs use its immediate `*.json`
+children. Every input filename needs an entry in the fixture map. Fixture paths
+are relative to that map. The sample map currently covers ten messages; the full
+20-message run awaits the remaining fixtures in later steps. A mock fixture is
+explicitly assigned by filename and never infers facts from a message.
+
+`intake` persists each message independently, then sequentially processes current
+pending work in the database, including jobs prepared by other operators. Its JSON
+summary reports the number of accepted inputs, their attempt IDs, and jobs claimed by this
+worker (including errors); use `records` to inspect outcomes. Add `--prepare-only`
+to persist jobs without processing. Repeating the intake command processes prepared
+pending work and reuses unchanged completed results without another provider call.
+
+The database stores each filename, original bytes/SHA-256, processing configuration
+and fingerprint, state, extraction, response source and any error. Fingerprints
+include provider/model, generation settings, prompt, policy, schema, pipeline
+version and the saved mock reply. Workers use these snapshots, so changing files
+after preparation cannot change an attempt's source or configuration. A changed
+source or fingerprint creates a new attempt; absent files stay in the database.
+The latest accepted attempt is current immediately, including pending/error work;
+earlier successful results remain in history with their earlier hashes/settings.
+
+`processing_state` is `pending`, `running`, `completed`, `error` or `superseded`.
+It describes extraction work, not the human review status. Completed attempts are
+retained; a newer revision supersedes unfinished older work, revoking its claim.
+Unchanged errors remain visible until explicit retry support arrives in step 5.
+
+Multiple operator processes can share one SQLite file **on a single machine's local
+disk**. WAL permits readers while writes proceed, writes use short transactions
+with a five-second busy timeout, and model calls run outside transactions.
+Claim tokens and 60-second leases guard completion; an expired or superseded
+worker cannot publish. Step 3 does not renew/recover expired leases or retry
+provider errors automatically. If interrupted after preparation but before a
+claim, rerun intake to process pending jobs; recovery of claimed work is step 5.
+Do not claim support for network-filesystem storage or multiple application hosts.
+Keep the database and its SQLite sidecar files together during operation; `var/`
+is ignored by Git. Prefer SQLite's backup facility for a live database backup.
+
+Step 3 evidence is in `planning/step-03-red.txt`, `planning/step-03-green.txt`, and
+`planning/step-03.md`. Review routing/queue, retry/resume, live provider configuration
+and accuracy commands remain later steps. The facilitator-provided `API_KEY`
+will be used by the live integration. Do not commit credentials or environments.
