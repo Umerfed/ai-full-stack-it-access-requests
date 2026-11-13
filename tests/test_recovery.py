@@ -1,12 +1,14 @@
 """T21/T22/T24/T28/T29: scheduling, interruption and bounded recovery, offline."""
 import io
 import json
+import signal
 import subprocess
 import sys
 import tempfile
 import threading
 import time
 from contextlib import redirect_stdout
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from email.utils import format_datetime
 from pathlib import Path
@@ -134,13 +136,14 @@ class Recovery(OfflineTestCase):
         active = [0]
         maximum = [0]
         lock = threading.Lock()
+        rendezvous = threading.Barrier(2)
 
         class CountingProvider:
             def complete(inner, message, **kwargs):
                 with lock:
                     active[0] += 1
                     maximum[0] = max(maximum[0], active[0])
-                time.sleep(0.02)
+                rendezvous.wait(timeout=2)
                 with lock:
                     active[0] -= 1
                 return GOOD
@@ -238,6 +241,52 @@ class Recovery(OfflineTestCase):
         self.assertIn("released", [e["event"] for e in self.events()])
         self.assertEqual(run_pending(self.store), 2)
 
+    def test_t24_sigterm_releases_a_rate_waiting_cli_worker(self):
+        self.ingest()
+        self.ingest("other.json")
+        process = subprocess.Popen([sys.executable, "-m", "it_access", "resume", "--db", str(self.db),
+            "--workers", "1", "--requests-per-minute", "60", "--lease-seconds", "1"],
+            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                states = {row["processing_state"] for row in self.store.current()}
+                if states == {"completed", "running"}:
+                    break
+                self.assertIsNone(process.poll())
+                time.sleep(0.01)
+            else:
+                self.fail("CLI did not reach the rate-limited second job")
+            process.send_signal(signal.SIGTERM)
+            output, error = process.communicate(timeout=5)
+            self.assertEqual(process.returncode, 143, error)
+            self.assertTrue(json.loads(output)["interrupted"])
+            self.assertEqual({r["processing_state"] for r in self.store.current()}, {"completed", "pending"})
+        finally:
+            if process.poll() is None:
+                process.kill()
+                process.communicate()
+
+    def test_t24_retry_budget_survives_interruption_and_resume(self):
+        self.ingest()
+        stop = threading.Event()
+        interrupted = mock.Mock()
+
+        def fail_then_stop(*args, **kwargs):
+            stop.set()
+            raise ProviderError("busy", retryable=True)
+
+        interrupted.complete.side_effect = fail_then_stop
+        options = WorkerOptions(workers=1, max_attempts=2, backoff_seconds=0)
+        run_pending(self.store, options=options, stop_event=stop, provider_factory=lambda settings: interrupted)
+        self.assertEqual(self.store.current()[0]["processing_state"], "pending")
+        resumed = mock.Mock()
+        resumed.complete.side_effect = TimeoutError
+        run_pending(self.store, options=options, provider_factory=lambda settings: resumed)
+        self.assertEqual(resumed.complete.call_count, 1)
+        calls = [event["details"]["number"] for event in self.events() if event["event"] == "provider-call"]
+        self.assertEqual(calls, [1, 2])
+
     def test_t28_manual_retry_after_success_has_new_attempt_and_failure_is_current(self):
         self.ingest()
         run_pending(self.store)
@@ -271,6 +320,21 @@ class Recovery(OfflineTestCase):
         self.ingest()
         with self.assertRaises(ValueError):
             self.store.retry("IT-001.json")
+
+    def test_t28_overlapping_manual_retries_create_only_one_new_attempt(self):
+        self.ingest()
+        run_pending(self.store)
+
+        def retry():
+            try:
+                return Store(self.db).retry("IT-001.json")
+            except ValueError:
+                return None
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(lambda item: retry(), range(2)))
+        self.assertEqual(sum(result is not None for result in results), 1)
+        self.assertEqual(len(self.store.history("IT-001.json")), 2)
         self.store.claim()
         with self.assertRaises(ValueError):
             self.store.retry("IT-001.json")
@@ -293,10 +357,30 @@ class Recovery(OfflineTestCase):
         provider = mock.Mock()
         provider.complete.side_effect = [ProviderError("rate limit", retryable=True, retry_after=0.2), GOOD]
         waited = []
-        with mock.patch("it_access.intake._wait", side_effect=lambda stop, seconds: waited.append(seconds) or False):
+        now = [time.time()]
+        self.store.clock = lambda: now[0]
+
+        def advance(stop, seconds):
+            waited.append(seconds)
+            now[0] += seconds
+            return False
+
+        with mock.patch("it_access.intake._wait", side_effect=advance):
             process_next(self.store, options=self.options, provider_factory=lambda settings: provider)
         self.assertTrue(any(delay >= 0.2 for delay in waited))
         self.assertEqual(provider.complete.call_count, 2)
+
+    def test_t29_exponential_backoff_and_connection_failure_recovery(self):
+        self.ingest()
+        provider = mock.Mock()
+        provider.complete.side_effect = [ConnectionError("secret"), ProviderError("busy", retryable=True), GOOD]
+        waited = []
+        options = WorkerOptions(workers=1, backoff_seconds=0.25, max_backoff_seconds=1)
+        with mock.patch("it_access.intake.random.uniform", return_value=1), \
+             mock.patch("it_access.intake._wait", side_effect=lambda stop, seconds: waited.append(seconds) or False):
+            process_next(self.store, options=options, provider_factory=lambda settings: provider)
+        self.assertEqual(waited, [0.25, 0.5])
+        self.assertEqual(self.store.queue()[0]["status"], "review")
 
     def test_t29_long_retry_after_is_reported_without_retrying_too_early(self):
         self.ingest()
