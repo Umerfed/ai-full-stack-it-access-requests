@@ -1,0 +1,56 @@
+{
+  "snapshot_id": "94615f054e59703499faef3f8f67fb6453fa6e0c8d746d4974d8d03d14e6208d",
+  "items": [
+    {
+      "document_id": "IT-003-production-read.json",
+      "attempt_id": 1,
+      "source_sha256": "5a7670d28701e31bc2049a36391a88492b13b1842f825c8bcacd08f402b8dc15",
+      "settings_fingerprint": "ffbfa2b30ccf70c899e4960e645abce50e665df8060316b4b5be89dbb880031d",
+      "processing_state": "completed",
+      "status": "review",
+      "owner": "Security Review",
+      "next_action": "review-risk-then-owner",
+      "response_source": "mock",
+      "error": null,
+      "lease_until": null,
+      "claim_count": 1,
+      "request_id": "IT-003",
+      "issues": [],
+      "snapshot_id": "94615f054e59703499faef3f8f67fb6453fa6e0c8d746d4974d8d03d14e6208d"
+    },
+    {
+      "document_id": "IT-003-staging-write.json",
+      "attempt_id": 2,
+      "source_sha256": "7bad0f803624edf2462990f0fe57ef3a8ec7f10f17c47c13c000da341084ec24",
+      "settings_fingerprint": "b8e8ab98ee139519decdb0d85b85e687ae2772c6d62acf48466283902ec6ffde",
+      "processing_state": "completed",
+      "status": "review",
+      "owner": "Security Review",
+      "next_action": "review-risk-then-owner",
+      "response_source": "mock",
+      "error": null,
+      "lease_until": null,
+      "claim_count": 1,
+      "request_id": "IT-003",
+      "issues": [],
+      "snapshot_id": "94615f054e59703499faef3f8f67fb6453fa6e0c8d746d4974d8d03d14e6208d"
+    },
+    {
+      "document_id": "IT-003.json",
+      "attempt_id": 3,
+      "source_sha256": "d7fb447ca610c167fd20a5db3bfd2a8592aa962a54ec72764235f1c47171e8c2",
+      "settings_fingerprint": "fecb27ce611045da1e99d5d1a84ffece3a72fe6c918ec1a030cb75c90c332c30",
+      "processing_state": "completed",
+      "status": "review",
+      "owner": "System Owner",
+      "next_action": "review-request",
+      "response_source": "mock",
+      "error": null,
+      "lease_until": null,
+      "claim_count": 1,
+      "request_id": "IT-003",
+      "issues": [],
+      "snapshot_id": "94615f054e59703499faef3f8f67fb6453fa6e0c8d746d4974d8d03d14e6208d"
+    }
+  ]
+}

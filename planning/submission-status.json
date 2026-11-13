@@ -1,0 +1,27 @@
+{
+  "repository": "https://github.com/Umerfed/ai-full-stack-it-access-requests",
+  "origin_configured": true,
+  "upstream_preserved": true,
+  "local_branch": "main",
+  "remote_default_branch_verified": false,
+  "capture": {
+    "paired": false,
+    "session_id": "01a1d5e5-6ab1-77e0-87db-95143307f156",
+    "transcript_present": true,
+    "private_ignored_backup": "var/capture-backup/01a1d5e5-6ab1-77e0-87db-95143307f156.jsonl",
+    "backup_is_facilitator_capture": false,
+    "hook_trust": "review_needed",
+    "existing_checkpoints": 9,
+    "existing_checkpoints_cover_current_session": false,
+    "attach_result": "Refused: remote cannot be reached to verify whether the commit has already been pushed."
+  },
+  "push": {
+    "completed": false,
+    "attempt_result": "Pending after repository connectivity and capture checks; remote lookup failed with Could not resolve host: github.com."
+  },
+  "github_authentication": "Unverified: CLI check failed while GitHub was unreachable. Recheck after networking is restored.",
+  "human_review": "User requested proceeding to capture pairing and push after reviewing the cases; no access approvals were recorded.",
+  "original_dataset_documents": 20,
+  "supplementary_IT003_scope_documents": 3,
+  "classroom_submission_completed": false
+}

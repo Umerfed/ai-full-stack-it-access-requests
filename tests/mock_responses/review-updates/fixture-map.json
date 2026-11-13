@@ -1,0 +1,5 @@
+{
+  "IT-003.json": "IT-003-response.json",
+  "IT-003-staging-write.json": "IT-003-staging-write-response.json",
+  "IT-003-production-read.json": "IT-003-production-read-response.json"
+}

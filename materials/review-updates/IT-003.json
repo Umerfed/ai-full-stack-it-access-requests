@@ -1,0 +1,19 @@
+{
+  "export_version": "1.0",
+  "exported_at": "2026-10-22T16:00:00Z",
+  "source_channel": "service_portal",
+  "subject": "Beacon access for renewal review",
+  "message": "Hi, this is Lina Gomez from Customer Success. I'm opening up IT-003 on 2026-10-22. I need new access to Beacon. The same access Sam has. We are working on the customer renewal review next week. I'm trying to get the account notes together before we meet as a team. My manager is Priya Shah. Sam did show me the screens during the hand-off but I didn't note what environment he was on or what the permission is named. Can someone help me figure out what the request should be? I'll follow up when I have the details.\n\nCorrection: the exact access start date is 2026-11-01 and the exact access end date is 2027-01-31.\n\nRequester clarification for this request document: the environment is staging and the requested permission is read. This document covers that single scope. The other requested scopes for IT-003 are recorded in separate linked documents.",
+  "revision_note": "Operator-prepared single-scope export from the user's human-review follow-ups; original source and prior attempts remain preserved.",
+  "requester_followup": "grant read and write access for staging and read access to production for IT-003",
+  "parent_document_id": "IT-003.json",
+  "related_documents": [
+    "IT-003.json",
+    "IT-003-staging-write.json",
+    "IT-003-production-read.json"
+  ],
+  "scope": {
+    "environment": "staging",
+    "permission": "read"
+  }
+}

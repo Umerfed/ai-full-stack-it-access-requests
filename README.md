@@ -379,3 +379,12 @@ operating limits and proposed 54-requirement audit are in
 The fresh locked environment passed 132 tests; the prerequisite check reports READY.
 All observed model/transport tests so far are mocked; no live accuracy claim is made.
 Do not commit credentials or environments.
+
+
+The latest IT-003 human-review follow-up is reproducible separately under
+[materials/review-updates](materials/review-updates/README.md), with three mock
+review results under deliverables/review-updates. The original 20-message baseline
+and accuracy expectations remain unchanged. The user-provided submission fork is
+https://github.com/Umerfed/ai-full-stack-it-access-requests. Current capture/network
+findings and the remaining publication checks are in
+[planning/step-08.md](planning/step-08.md); no successful push is claimed.
