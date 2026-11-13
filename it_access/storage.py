@@ -13,6 +13,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
+from it_access.extraction import message_from_export
+from it_access.routing import check_routing_settings, prepare_review
+
 
 DDL = """
 CREATE TABLE IF NOT EXISTS documents (
@@ -39,6 +42,12 @@ CREATE TABLE IF NOT EXISTS attempts (
     response_source TEXT
 );
 CREATE INDEX IF NOT EXISTS attempts_document ON attempts(document_id, attempt_id);
+CREATE TABLE IF NOT EXISTS review_routes (
+    attempt_id INTEGER PRIMARY KEY REFERENCES attempts(attempt_id),
+    status TEXT NOT NULL CHECK (status IN ('review', 'needs-information', 'error')),
+    owner TEXT NOT NULL,
+    next_action TEXT NOT NULL
+);
 """
 
 
@@ -143,15 +152,17 @@ class Store:
         """One consistent read of the latest accepted attempt per document."""
         with self._connection() as connection:
             return [self._record(row) for row in connection.execute(
-                "SELECT a.*, 1 AS is_current FROM documents d JOIN attempts a "
-                "ON a.attempt_id=d.current_attempt_id ORDER BY d.document_id"
+                "SELECT a.*, r.status, r.owner, r.next_action, 1 AS is_current "
+                "FROM documents d JOIN attempts a ON a.attempt_id=d.current_attempt_id "
+                "LEFT JOIN review_routes r ON r.attempt_id=a.attempt_id ORDER BY d.document_id"
             )]
 
     def history(self, document_id: str) -> list[dict]:
         with self._connection() as connection:
             return [self._record(row) for row in connection.execute(
-                "SELECT a.*, (a.attempt_id=d.current_attempt_id) AS is_current "
+                "SELECT a.*, r.status, r.owner, r.next_action, (a.attempt_id=d.current_attempt_id) AS is_current "
                 "FROM attempts a JOIN documents d ON a.document_id=d.document_id "
+                "LEFT JOIN review_routes r ON r.attempt_id=a.attempt_id "
                 "WHERE a.document_id=? ORDER BY a.attempt_id", (document_id,)
             )]
 
@@ -175,7 +186,7 @@ class Store:
             return Claim(row["attempt_id"], row["document_id"], token, lease_until,
                          row["source_bytes"], json.loads(row["settings_json"]))
 
-    def _finish(self, claim: Claim, state: str, extraction, error, response_source: str) -> bool:
+    def _finish(self, claim: Claim, state: str, extraction, error, response_source: str, route: dict) -> bool:
         with self._write() as connection:
             cursor = connection.execute(
                 "UPDATE attempts SET processing_state=?, extraction_json=?, error_json=?,"
@@ -186,11 +197,49 @@ class Store:
                  canonical_json(error) if error is not None else None, response_source, self.clock(),
                  claim.attempt_id, claim.token, self.clock(), claim.document_id)
             )
-            return cursor.rowcount == 1
+            if cursor.rowcount != 1:
+                return False
+            connection.execute(
+                "INSERT INTO review_routes(attempt_id,status,owner,next_action) VALUES (?,?,?,?)",
+                (claim.attempt_id, route["status"], route["owner"], route["next_action"])
+            )
+            return True
 
     def complete(self, claim: Claim, extraction: dict, response_source: str) -> bool:
         """Publish a validated extraction if this worker still owns current work."""
-        return self._finish(claim, "completed", extraction, None, response_source)
+        check_routing_settings(claim.settings)
+        message = message_from_export(json.loads(claim.source_bytes.decode("utf-8")))
+        review = prepare_review(claim.document_id, extraction, message, schema=claim.settings["schema"])
+        return self._finish(claim, "completed", review["extraction"], None, response_source, review)
 
     def fail(self, claim: Claim, error: dict, response_source: str) -> bool:
-        return self._finish(claim, "error", None, error, response_source)
+        route = {"status": "error", "owner": "IT Service Desk", "next_action": "retry-extraction"}
+        return self._finish(claim, "error", None, error, response_source, route)
+
+    def queue(self) -> list[dict]:
+        """Current decisions linked to the same attempt/hash as extraction records.
+
+        Reads persisted routes rather than applying today's policy to yesterday's
+        extractions. Legacy completed records explicitly require a fresh intake.
+        """
+        items = []
+        for record in self.current():
+            item = {field: record[field] for field in (
+                "document_id", "attempt_id", "source_sha256", "settings_fingerprint",
+                "processing_state", "status", "owner", "next_action", "response_source", "error",
+            )}
+            extraction = record["extraction"]
+            item["request_id"] = extraction["request_id"] if extraction is not None else None
+            item["issues"] = extraction["issues"] if extraction is not None else []
+            if item["status"] is None:
+                state = item["processing_state"]
+                if state in {"pending", "running"}:
+                    status = "pending" if state == "pending" else "processing"
+                    action = "await-extraction"
+                elif state == "error":
+                    status, action = "error", "retry-extraction"
+                else:
+                    status, action = "refresh-required", "refresh-intake"
+                item.update(status=status, owner="IT Service Desk", next_action=action)
+            items.append(item)
+        return items

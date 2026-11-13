@@ -56,8 +56,10 @@ def main(argv: list[str] | None = None) -> int:
                         help="JSON map: input filename to mock fixture path, relative to this map.")
     intake.add_argument("--prepare-only", action="store_true", help="Persist pending work without processing.")
     intake.add_argument("--db", type=Path, default=Path("var/intake.db"))
-    records = commands.add_parser("records", help="Inspect latest attempt per document (routing is added later).")
+    records = commands.add_parser("records", help="Inspect latest extraction attempt and routing per document.")
     records.add_argument("--db", type=Path, default=Path("var/intake.db"))
+    queue = commands.add_parser("queue", help="Inspect the current human review queue and unfinished work.")
+    queue.add_argument("--db", type=Path, default=Path("var/intake.db"))
     history = commands.add_parser("history", help="Inspect all attempts for an input filename.")
     history.add_argument("document_id")
     history.add_argument("--db", type=Path, default=Path("var/intake.db"))
@@ -69,6 +71,8 @@ def main(argv: list[str] | None = None) -> int:
             result = _intake(args)
         elif args.command == "records":
             result = Store(args.db).current()
+        elif args.command == "queue":
+            result = Store(args.db).queue()
         else:
             result = Store(args.db).history(args.document_id)
     except (ProviderError, OSError, ValueError) as exc:

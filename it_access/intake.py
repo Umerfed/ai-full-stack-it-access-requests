@@ -5,13 +5,15 @@ from it_access.extraction import (
     ExtractionError, POLICY_PATH, PROMPT_PATH, SCHEMA_PATH, message_from_export, validate_response,
 )
 from it_access.providers import MockProvider, ProviderError
+from it_access.routing import PIPELINE_VERSION, ROUTING_VERSION, check_routing_settings
 from it_access.storage import Store
 
 
 def processing_settings(*, provider="mock", model="fixture", generation=None, mock_reply=None) -> dict:
     """Fingerprint inputs only; credentials must never be included in settings."""
     return {
-        "pipeline_version": "3.0",
+        "pipeline_version": PIPELINE_VERSION,
+        "routing_version": ROUTING_VERSION,
         "provider": provider,
         "model": model,
         "generation": {} if generation is None else generation,
@@ -40,6 +42,7 @@ def process_next(store: Store, *, provider_factory=None) -> bool:
     settings = claim.settings
     response_source = "mock" if settings["provider"] == "mock" else f'{settings["provider"]}/{settings["model"]}'
     try:
+        check_routing_settings(settings)
         try:
             exported = json.loads(claim.source_bytes.decode("utf-8"))
         except (UnicodeError, ValueError, RecursionError):
