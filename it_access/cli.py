@@ -11,6 +11,8 @@ from dataclasses import asdict
 from pathlib import Path
 
 from it_access.intake import WorkerOptions, processing_settings, run_pending
+from it_access.accuracy import evaluate, load_expectations
+from it_access.exports import export_snapshot, verify_export
 from it_access.extraction import ExtractionError, instructions_from_settings, message_from_export
 from it_access.openai_provider import DEFAULT_MODEL, request_evidence
 from it_access.providers import MockProvider, ProviderError
@@ -148,6 +150,17 @@ def main(argv: list[str] | None = None) -> int:
     history = commands.add_parser("history", help="Inspect all attempts for an input filename.")
     history.add_argument("document_id")
     history.add_argument("--db", type=Path, default=Path("var/intake.db"))
+    export = commands.add_parser("export", help="Publish one consistent finalized extraction/queue snapshot.")
+    export.add_argument("--db", type=Path, default=Path("var/intake.db"))
+    export.add_argument("--out", type=Path, default=Path("deliverables"))
+    verify = commands.add_parser("verify-export", help="Verify a pinned snapshot's hashes, source links and invariants.")
+    verify.add_argument("--out", type=Path, default=Path("deliverables"))
+    verify.add_argument("--sources", type=Path, help="Directory of source exports for byte-hash and exact-quote checks.")
+    accuracy = commands.add_parser("accuracy", help="Compare output against frozen source-derived expectations.")
+    accuracy.add_argument("--expected", type=Path, default=Path("tests/expected"))
+    accuracy.add_argument("--records", type=Path, required=True)
+    accuracy.add_argument("--group", choices=["originals", "paraphrase"], default="originals")
+    accuracy.add_argument("--out", type=Path, help="Also save the machine-readable comparison report.")
     args = parser.parse_args(argv)
     try:
         if args.command in {"intake", "resume", "retry", "request-evidence"}:
@@ -184,6 +197,16 @@ def main(argv: list[str] | None = None) -> int:
             args.out.parent.mkdir(parents=True, exist_ok=True)
             args.out.write_text(json.dumps(example, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             result = {"observation": example["observation"], "path": str(args.out)}
+        elif args.command == "export":
+            result = export_snapshot(Store(args.db), args.out)
+        elif args.command == "verify-export":
+            result = verify_export(args.out, sources_dir=args.sources)
+        elif args.command == "accuracy":
+            records = [json.loads(line) for line in args.records.read_text(encoding="utf-8").splitlines() if line.strip()]
+            result = evaluate(records, load_expectations(args.expected), group=args.group)
+            if args.out:
+                args.out.parent.mkdir(parents=True, exist_ok=True)
+                args.out.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         elif args.command == "records":
             result = Store(args.db).current()
         elif args.command == "queue":

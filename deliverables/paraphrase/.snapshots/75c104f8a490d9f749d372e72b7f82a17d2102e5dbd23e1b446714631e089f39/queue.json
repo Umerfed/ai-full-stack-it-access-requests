@@ -1,0 +1,22 @@
+{
+  "snapshot_id": "75c104f8a490d9f749d372e72b7f82a17d2102e5dbd23e1b446714631e089f39",
+  "items": [
+    {
+      "document_id": "paraphrase.json",
+      "attempt_id": 1,
+      "source_sha256": "2597a2125bfc843ffa543db522fbb419e58e1ceb54c61c8ea65965cbd89af066",
+      "settings_fingerprint": "6803251536092510866e690d6ac1c2a7648887ae8051f9dc746a0559975af3ec",
+      "processing_state": "completed",
+      "status": "review",
+      "owner": "System Owner",
+      "next_action": "review-request",
+      "response_source": "mock",
+      "error": null,
+      "lease_until": null,
+      "claim_count": 1,
+      "request_id": "IT-021",
+      "issues": [],
+      "snapshot_id": "75c104f8a490d9f749d372e72b7f82a17d2102e5dbd23e1b446714631e089f39"
+    }
+  ]
+}

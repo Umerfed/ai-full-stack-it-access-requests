@@ -1,0 +1,9 @@
+{
+  "format_version": 1,
+  "snapshot_id": "75c104f8a490d9f749d372e72b7f82a17d2102e5dbd23e1b446714631e089f39",
+  "documents": 1,
+  "files": {
+    "extractions.jsonl": "035eb5098e7308e35ee979503174926dfd531ee51c5dde6f0b7e6e650a4d69ec",
+    "queue.json": "58b5cd8e06122a70cfdf58787b339f284ad15ba85ab1f55e744fe07d95910469"
+  }
+}

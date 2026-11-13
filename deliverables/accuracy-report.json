@@ -1,0 +1,86 @@
+{
+  "group": "originals",
+  "documents": 20,
+  "scalar_exact": {
+    "matched": 237,
+    "total": 240
+  },
+  "routing_exact": {
+    "matched": 20,
+    "total": 20
+  },
+  "quote_validity": {
+    "matched": 23,
+    "total": 23
+  },
+  "evidence_coverage": {
+    "matched": 227,
+    "total": 227
+  },
+  "issue_coverage": {
+    "matched": 24,
+    "total": 24
+  },
+  "response_sources": {
+    "mock": 20
+  },
+  "integrity_errors": [],
+  "record_errors": [],
+  "scalar_discrepancies": [
+    {
+      "document_id": "IT-009.json",
+      "field": "business_purpose",
+      "expected": "go through example support cases before updating our troubleshooting guide",
+      "actual": "to go through example support cases before updating our troubleshooting guide",
+      "usable_extraction": true
+    },
+    {
+      "document_id": "IT-010.json",
+      "field": "business_purpose",
+      "expected": "compare the daily reconciliation report to the entries that the operations folks see",
+      "actual": "What I'm looking to do is to compare the daily reconciliation report to the entries that the operations folks see as some of the totals have been hard to explain at the hand-over.",
+      "usable_extraction": true
+    },
+    {
+      "document_id": "IT-013.json",
+      "field": "business_purpose",
+      "expected": "review account activity records to help with internal audit we have scheduled.",
+      "actual": "to review account activity records to help with internal audit we have scheduled.",
+      "usable_extraction": true
+    }
+  ],
+  "manual_review_required": [
+    {
+      "document_id": "IT-009.json",
+      "field": "business_purpose",
+      "expected": "go through example support cases before updating our troubleshooting guide",
+      "actual": "to go through example support cases before updating our troubleshooting guide",
+      "usable_extraction": true,
+      "actual_is_source_substring": true,
+      "reason": "Wording differs; inspect semantic equivalence without changing the exact score."
+    },
+    {
+      "document_id": "IT-010.json",
+      "field": "business_purpose",
+      "expected": "compare the daily reconciliation report to the entries that the operations folks see",
+      "actual": "What I'm looking to do is to compare the daily reconciliation report to the entries that the operations folks see as some of the totals have been hard to explain at the hand-over.",
+      "usable_extraction": true,
+      "actual_is_source_substring": true,
+      "reason": "Wording differs; inspect semantic equivalence without changing the exact score."
+    },
+    {
+      "document_id": "IT-013.json",
+      "field": "business_purpose",
+      "expected": "review account activity records to help with internal audit we have scheduled.",
+      "actual": "to review account activity records to help with internal audit we have scheduled.",
+      "usable_extraction": true,
+      "actual_is_source_substring": true,
+      "reason": "Wording differs; inspect semantic equivalence without changing the exact score."
+    }
+  ],
+  "missing_evidence": [],
+  "missing_issues": [],
+  "missing_documents": [],
+  "unexpected_documents": [],
+  "interpretation": "Exact comparison of saved outputs against fixed source-derived expectations. Mock agreement does not measure model accuracy; business-purpose differences and free-text factual claims need source review."
+}

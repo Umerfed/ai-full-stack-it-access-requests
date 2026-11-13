@@ -1,11 +1,14 @@
 # Northstar IT access request intake
 
-Work in progress: steps 1–6 provide mock/OpenAI providers, validated extraction,
-persistent intake, a human review queue, concurrent workers and recovery commands.
+This CLI prepares fictional Northstar access requests for human review using
+mock or OpenAI extraction, persistent intake, concurrent workers and recovery.
+The implementation and submission artifacts are complete through step 7; final
+human validation, capture pairing and repository submission remain step 8.
 The build sequence and requirements are in [planning/plan.md](planning/plan.md)
 and [planning/spec.md](planning/spec.md); the assignment is in [CHALLENGE.md](CHALLENGE.md).
 
-Use Python 3.12 or later with SQLite JSON functions. Run commands from the repository root. There are no
+Use Python 3.12 or later on Linux/POSIX with SQLite JSON functions and symlink
+support. Run commands from the repository root. There are no
 external dependencies at this stage, so no installation or credentials are needed.
 `pyproject.toml` and `uv.lock` record the runtime and dependency baseline. If uv
 is installed, `uv sync --locked --offline` prepares an isolated environment.
@@ -269,6 +272,74 @@ results; resume/retry keep saved settings regardless of changed environment defa
 For provider changes use fresh intake. Mock intake requires its fixture map;
 OpenAI intake rejects a fixture map and OpenAI retries reject replacement fixtures.
 
+Regenerate the submitted 20-message outputs and check them against the fixed
+source-derived expectations using a dedicated dataset database:
+
+```bash
+env -u API_KEY python3 -m it_access intake materials/requests --provider mock --fixture-map tests/mock_responses/fixture-map.json --db var/submission.db
+python3 -m it_access export --db var/submission.db --out deliverables
+python3 -m it_access verify-export --out deliverables --sources materials/requests
+python3 -m it_access accuracy --expected tests/expected --records deliverables/extractions.jsonl --out deliverables/accuracy-report.json
+```
+
+`export` captures current records once, refuses unfinished/unrouted work, and writes
+extractions.jsonl, queue.json and a hash manifest into an immutable snapshot directory.
+Both public files are relative symlinks through `deliverables/.current`, switched
+atomically after the candidate snapshot is complete. Exports serialize using a
+local file lock, retain older snapshots and leave unrelated files such as request
+evidence untouched. Include `.current` and `.snapshots` when committing/copying the
+outputs; Git preserves those symlinks. `verify-export` resolves `.current` once,
+checks file hashes, linked IDs/attempts/source/configuration/routing, and optionally
+checks original-byte hashes, schema and exact quotes against `--sources`.
+
+Readers opening the two public paths across an export can cross a pointer update;
+their snapshot IDs expose that mismatch. Resolve `.current` once and open both
+files inside that pinned directory, as `verify-export` does. Keep prior snapshots
+for ongoing readers. Export publication/interruption and overlapping-export checks
+are included in the test suite. Only finalized results go into submission exports;
+the live `queue` command remains available during processing.
+
+The accuracy command does not derive expected answers from responses. It scores
+12 scalar fields per expected document with exact equality and explicit nulls;
+failed or missing extractions count as 12 failures. It rejects duplicate current
+IDs and reports source/version problems, evidence, issue coverage and routing
+separately. A completed comparison exits 0 even when discrepancies exist; read
+the report. The recorded mock result is **237/240** exact scalar matches and
+**20/20** routing tuples. Three purpose-wording differences remain in the exact
+score; the agent's source review found equivalent passages and observed no factual
+errors. This measures mock pipeline agreement, not live model accuracy or human sign-off.
+
+Run the authored paraphrase separately so the original deliverable remains 20 records:
+
+```bash
+env -u API_KEY python3 -m it_access intake tests/inputs/paraphrase.json --provider mock --fixture-map tests/mock_responses/paraphrase-map.json --db var/paraphrase.db
+python3 -m it_access export --db var/paraphrase.db --out deliverables/paraphrase
+python3 -m it_access verify-export --out deliverables/paraphrase --sources tests/inputs
+python3 -m it_access accuracy --expected tests/expected --records deliverables/paraphrase/extractions.jsonl --group paraphrase --out deliverables/paraphrase-report.json
+```
+
+The paraphrase's mock comparison is **12/12**, reported independently. The expected
+ledger includes exact source quotes and null reasons for all 21 messages.
+See [accuracy.md](deliverables/accuracy.md) for all expected fields, denominator
+rules, discrepancies, factual review and configuration labels. Use separate
+databases for operational failure demonstrations: omitted batch files intentionally
+remain current, so a reused database may contain unrelated documents.
+
+Reproduce the larger workload/restart check with all model calls mocked and
+network access blocked:
+
+```bash
+env -u API_KEY python3 tools/verify_workload.py --documents 2000 --workers 4 --out deliverables/workload.json
+```
+
+It repeats the 20 source/fixture pairs under independent filenames, holds one call
+while inspecting completed records, interrupts/resumes work, recovers an abruptly
+exited claim, checks unchanged reuse and verifies database/export integrity. The
+recorded run took about 81 seconds with about 135 MiB peak RSS on this machine.
+It does not establish provider throughput or multi-host operation. History and
+snapshots grow; retention and backups are operator responsibilities.
+
+
 The request keeps trusted instructions separate from the message, constrains
 `text.format` to the supplied schema, and still validates returned facts/evidence
 locally. The adapter reads only assistant `output_text` content, skips reasoning
@@ -302,7 +373,9 @@ logs and its recorded mock queue. Independent expected routes and their source
 quotes are in `tests/expected/routing.json`. Step 5 tests, observed repairs and
 mock recovery outcomes are documented in `planning/step-05.md` and its supporting
 logs/observations. Step 6 transport tests, API references, observed evidence repair
-and limitations are recorded in `planning/step-06.md`. All observed model/transport
-tests so far are mocked; no live accuracy claim is made. Consistent extraction/queue
-deliverable exports and independent field-accuracy checks remain step 7.
+and limitations are recorded in `planning/step-06.md`. Step 7 commands, results,
+operating limits and proposed 54-requirement audit are in
+[verification.md](deliverables/verification.md) and [planning/validation.md](planning/validation.md).
+The fresh locked environment passed 132 tests; the prerequisite check reports READY.
+All observed model/transport tests so far are mocked; no live accuracy claim is made.
 Do not commit credentials or environments.

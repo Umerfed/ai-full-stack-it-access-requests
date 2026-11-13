@@ -361,8 +361,12 @@ class Store:
         Reads persisted routes rather than applying today's policy to yesterday's
         extractions. Legacy completed records explicitly require a fresh intake.
         """
+        return self.queue_from_records(self.current())
+
+    def queue_from_records(self, records: list[dict]) -> list[dict]:
+        """Build a queue from an already captured read, without another query."""
         items = []
-        for record in self.current():
+        for record in records:
             item = {field: record[field] for field in (
                 "document_id", "attempt_id", "source_sha256", "settings_fingerprint",
                 "processing_state", "status", "owner", "next_action", "response_source", "error",

@@ -1,0 +1,45 @@
+{
+  "reviewer": "Codex source inspection in this session; not human sign-off",
+  "scope": "All 20 saved mock records and the paraphrase against original decoded messages, frozen scalar expectations, evidence and issue context.",
+  "response_sources": {
+    "mock": 21
+  },
+  "live_observations": false,
+  "confirmed_factual_errors_observed": 0,
+  "exact_wording_discrepancies": [
+    {
+      "document_id": "IT-009.json",
+      "field": "business_purpose",
+      "expected": "go through example support cases before updating our troubleshooting guide",
+      "actual": "to go through example support cases before updating our troubleshooting guide",
+      "usable_extraction": true,
+      "actual_is_source_substring": true,
+      "reason": "Wording differs; inspect semantic equivalence without changing the exact score.",
+      "assessment": "Source-grounded equivalent wording; exact-match failure retained.",
+      "source_review_note": "The mock includes the source infinitive marker \u201cto\u201d; both spans describe reviewing support cases before updating the guide."
+    },
+    {
+      "document_id": "IT-010.json",
+      "field": "business_purpose",
+      "expected": "compare the daily reconciliation report to the entries that the operations folks see",
+      "actual": "What I'm looking to do is to compare the daily reconciliation report to the entries that the operations folks see as some of the totals have been hard to explain at the hand-over.",
+      "usable_extraction": true,
+      "actual_is_source_substring": true,
+      "reason": "Wording differs; inspect semantic equivalence without changing the exact score.",
+      "assessment": "Source-grounded equivalent wording; exact-match failure retained.",
+      "source_review_note": "The mock retains the complete source sentence, adding the first-person lead-in and handover-total motivation; the expected span selects its comparison task."
+    },
+    {
+      "document_id": "IT-013.json",
+      "field": "business_purpose",
+      "expected": "review account activity records to help with internal audit we have scheduled.",
+      "actual": "to review account activity records to help with internal audit we have scheduled.",
+      "usable_extraction": true,
+      "actual_is_source_substring": true,
+      "reason": "Wording differs; inspect semantic equivalence without changing the exact score.",
+      "assessment": "Source-grounded equivalent wording; exact-match failure retained.",
+      "source_review_note": "The mock includes the source infinitive marker \u201cto\u201d; both spans describe account-activity review for the scheduled internal audit."
+    }
+  ],
+  "limits": "Agent review of fictional saved mocks, not a live model evaluation or an independent human audit; free-text issue explanations are not exhaustively machine-verified."
+}

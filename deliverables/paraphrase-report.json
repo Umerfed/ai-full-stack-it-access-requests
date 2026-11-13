@@ -1,0 +1,36 @@
+{
+  "group": "paraphrase",
+  "documents": 1,
+  "scalar_exact": {
+    "matched": 12,
+    "total": 12
+  },
+  "routing_exact": {
+    "matched": 1,
+    "total": 1
+  },
+  "quote_validity": {
+    "matched": 1,
+    "total": 1
+  },
+  "evidence_coverage": {
+    "matched": 12,
+    "total": 12
+  },
+  "issue_coverage": {
+    "matched": 0,
+    "total": 0
+  },
+  "response_sources": {
+    "mock": 1
+  },
+  "integrity_errors": [],
+  "record_errors": [],
+  "scalar_discrepancies": [],
+  "manual_review_required": [],
+  "missing_evidence": [],
+  "missing_issues": [],
+  "missing_documents": [],
+  "unexpected_documents": [],
+  "interpretation": "Exact comparison of saved outputs against fixed source-derived expectations. Mock agreement does not measure model accuracy; business-purpose differences and free-text factual claims need source review."
+}

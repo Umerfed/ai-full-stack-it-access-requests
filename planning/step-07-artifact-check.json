@@ -1,0 +1,28 @@
+{
+  "required_paths_checked": 12,
+  "originals": {
+    "snapshot_id": "7387cdbe8bb863b1fe6d0a236edba3258098adaa008293cd797a78b28e2fb26d",
+    "documents": 20,
+    "response_sources": [
+      "mock"
+    ],
+    "sources_checked": true,
+    "verified": true
+  },
+  "paraphrase": {
+    "snapshot_id": "75c104f8a490d9f749d372e72b7f82a17d2102e5dbd23e1b446714631e089f39",
+    "documents": 1,
+    "response_sources": [
+      "mock"
+    ],
+    "sources_checked": true,
+    "verified": true
+  },
+  "spec_rows": 54,
+  "proposed_met": 52,
+  "not_met": 2,
+  "test_count": 132,
+  "comparison_sources": "mock",
+  "live_provider_observations": false,
+  "capture_and_submission": "pending step 8"
+}

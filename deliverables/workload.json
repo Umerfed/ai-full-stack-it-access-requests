@@ -1,0 +1,49 @@
+{
+  "observation": "mock-workload-not-provider-throughput",
+  "response_source": "mock",
+  "input_description": "20 supplied source/fixture pairs repeated under independent filenames retaining their IT identifier; no fresh live model extraction",
+  "documents": 2000,
+  "worker_options": {
+    "workers": 4,
+    "timeout_seconds": 30,
+    "max_attempts": 3,
+    "lease_seconds": 60,
+    "backoff_seconds": 0,
+    "max_backoff_seconds": 30,
+    "requests_per_minute": 0
+  },
+  "synthetic_latency_seconds": 0.001,
+  "completed_before_stop": 48,
+  "claimed_before_stop": 51,
+  "abrupt_claim_attempt_id": 1,
+  "expired_claims_recovered": 1,
+  "claimed_after_resume": 1952,
+  "provider_calls": 2001,
+  "peak_provider_concurrency": 2,
+  "assertions": {
+    "incremental_results_with_blocked_call": true,
+    "bounded_concurrency": true,
+    "completed_work_not_repeated": true,
+    "expired_claim_recovered": true,
+    "all_routes_match_source_expectations": true,
+    "unchanged_rerun_zero_calls": true,
+    "snapshot_pair_verified": true,
+    "sqlite_integrity_and_foreign_keys": true
+  },
+  "durations_seconds": {
+    "prepare": 13.97919303299932,
+    "first_phase": 2.5840630210004747,
+    "recovery_and_resume": 60.91091579499698,
+    "unchanged_and_inspection": 2.1915702110018174,
+    "export_and_verify": 0.8992058699986956,
+    "total": 80.56494792999729
+  },
+  "environment": {
+    "python": "3.12.3",
+    "sqlite": "3.45.1",
+    "platform": "Linux-6.12.114+-x86_64-with-glibc2.39",
+    "cpu_count": 8,
+    "max_rss_kib_linux": 138184
+  },
+  "limits": "One machine/local disk, one four-worker scheduler plus an abruptly exited claiming subprocess. Two-operator behavior is separately unit-tested. No actual provider latency/rate/availability or multi-host claim is established."
+}
