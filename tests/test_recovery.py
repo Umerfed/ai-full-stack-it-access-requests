@@ -320,6 +320,9 @@ class Recovery(OfflineTestCase):
         self.ingest()
         with self.assertRaises(ValueError):
             self.store.retry("IT-001.json")
+        self.store.claim()
+        with self.assertRaises(ValueError):
+            self.store.retry("IT-001.json")
 
     def test_t28_overlapping_manual_retries_create_only_one_new_attempt(self):
         self.ingest()
@@ -335,9 +338,6 @@ class Recovery(OfflineTestCase):
             results = list(executor.map(lambda item: retry(), range(2)))
         self.assertEqual(sum(result is not None for result in results), 1)
         self.assertEqual(len(self.store.history("IT-001.json")), 2)
-        self.store.claim()
-        with self.assertRaises(ValueError):
-            self.store.retry("IT-001.json")
 
     def test_t29_invalid_refused_or_incomplete_responses_are_not_automatically_retried(self):
         for name in ("refusal", "incomplete", "malformed", "wrong-schema"):

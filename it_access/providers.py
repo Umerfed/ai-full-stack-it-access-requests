@@ -13,6 +13,11 @@ from typing import Protocol
 class ProviderError(Exception):
     """An actionable provider failure without raw response or credential data."""
 
+    def __init__(self, message: str, *, retryable: bool = False, retry_after=None):
+        super().__init__(message)
+        self.retryable = retryable
+        self.retry_after = retry_after
+
 
 @dataclass(frozen=True)
 class ModelResponse:
@@ -23,8 +28,8 @@ class ModelResponse:
 
 
 class Provider(Protocol):
-    def complete(self, message: str, *, instructions: str = "") -> ModelResponse:
-        """Return a response envelope; callers must validate before using it."""
+    def complete(self, message: str, *, instructions: str = "", timeout_seconds: float = 30) -> ModelResponse:
+        """Return an envelope within the transport timeout; callers validate it."""
         ...
 
 
@@ -37,7 +42,7 @@ class MockProvider:
         self.fixture_path = Path(fixture_path) if fixture_path is not None else None
         self.fixture_text = fixture_text
 
-    def complete(self, message: str, *, instructions: str = "") -> ModelResponse:
+    def complete(self, message: str, *, instructions: str = "", timeout_seconds: float = 30) -> ModelResponse:
         # Message is deliberately ignored: fixtures are explicitly selected.
         try:
             raw = self.fixture_text if self.fixture_text is not None else self.fixture_path.read_text(encoding="utf-8")

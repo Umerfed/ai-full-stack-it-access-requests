@@ -1,14 +1,49 @@
 """Operator CLI entry point; intake commands are added in later build steps."""
 import argparse
 import json
+import signal
 import sqlite3
 import sys
+import threading
 from dataclasses import asdict
 from pathlib import Path
 
-from it_access.intake import processing_settings, run_pending
+from it_access.intake import WorkerOptions, processing_settings, run_pending
 from it_access.providers import MockProvider, ProviderError
 from it_access.storage import Store
+
+
+def _worker_flags(parser):
+    defaults = WorkerOptions()
+    parser.add_argument("--workers", type=int, default=defaults.workers)
+    parser.add_argument("--timeout-seconds", type=float, default=defaults.timeout_seconds)
+    parser.add_argument("--max-attempts", type=int, default=defaults.max_attempts)
+    parser.add_argument("--lease-seconds", type=float, default=defaults.lease_seconds)
+    parser.add_argument("--backoff-seconds", type=float, default=defaults.backoff_seconds)
+    parser.add_argument("--max-backoff-seconds", type=float, default=defaults.max_backoff_seconds)
+    parser.add_argument("--requests-per-minute", type=float, default=defaults.requests_per_minute,
+                        help="Shared DB/provider/model request limit; 0 disables spacing.")
+
+
+def _run_jobs(args, store, *, document_id=None):
+    stop = threading.Event()
+    received = [None]
+
+    def interrupt(signum, frame):
+        received[0] = signum
+        stop.set()
+
+    previous = {}
+    if threading.current_thread() is threading.main_thread():
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            previous[signum] = signal.signal(signum, interrupt)
+    try:
+        processed = run_pending(store, options=args.worker_options, stop_event=stop, document_id=document_id)
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
+    remaining = sum(row["processing_state"] in {"pending", "running"} for row in store.current())
+    return {"processed": processed, "unfinished": remaining, "interrupted": stop.is_set(), "signal": received[0]}
 
 
 def _intake(args) -> dict:
@@ -36,8 +71,8 @@ def _intake(args) -> dict:
         prepared.append((path.name, path.read_bytes(), settings))
     store = Store(args.db)
     attempts = [store.ingest(name, raw, settings) for name, raw, settings in prepared]
-    processed = 0 if args.prepare_only else run_pending(store)
-    return {"accepted": len(paths), "attempt_ids": attempts, "processed": processed}
+    work = {"processed": 0} if args.prepare_only else _run_jobs(args, store)
+    return {"accepted": len(paths), "attempt_ids": attempts, **work}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -56,6 +91,18 @@ def main(argv: list[str] | None = None) -> int:
                         help="JSON map: input filename to mock fixture path, relative to this map.")
     intake.add_argument("--prepare-only", action="store_true", help="Persist pending work without processing.")
     intake.add_argument("--db", type=Path, default=Path("var/intake.db"))
+    _worker_flags(intake)
+    resume = commands.add_parser("resume", help="Recover expired claims and process unfinished work.")
+    resume.add_argument("--db", type=Path, default=Path("var/intake.db"))
+    resume.add_argument("--provider", choices=["mock"], default="mock")
+    _worker_flags(resume)
+    retry = commands.add_parser("retry", help="Create a fresh attempt for a completed or failed document.")
+    retry.add_argument("document_id")
+    retry.add_argument("--db", type=Path, default=Path("var/intake.db"))
+    retry.add_argument("--provider", choices=["mock"], default="mock")
+    retry.add_argument("--fixture", type=Path, help="Replace the saved mock reply for this new attempt.")
+    retry.add_argument("--prepare-only", action="store_true")
+    _worker_flags(retry)
     records = commands.add_parser("records", help="Inspect latest extraction attempt and routing per document.")
     records.add_argument("--db", type=Path, default=Path("var/intake.db"))
     queue = commands.add_parser("queue", help="Inspect the current human review queue and unfinished work.")
@@ -65,10 +112,22 @@ def main(argv: list[str] | None = None) -> int:
     history.add_argument("--db", type=Path, default=Path("var/intake.db"))
     args = parser.parse_args(argv)
     try:
+        if args.command in {"intake", "resume", "retry"}:
+            args.worker_options = WorkerOptions(**{field: getattr(args, field) for field in WorkerOptions.__dataclass_fields__})
         if args.command == "mock-reply":
             result = asdict(MockProvider(args.fixture).complete(""))
         elif args.command == "intake":
             result = _intake(args)
+        elif args.command == "resume":
+            store = Store(args.db)
+            recovered = store.recover_expired()
+            result = {"recovered": recovered, **_run_jobs(args, store)}
+        elif args.command == "retry":
+            overrides = {"mock_reply": args.fixture.read_text(encoding="utf-8")} if args.fixture else None
+            store = Store(args.db)
+            attempt_id = store.retry(args.document_id, settings_overrides=overrides)
+            work = {"processed": 0} if args.prepare_only else _run_jobs(args, store, document_id=args.document_id)
+            result = {"attempt_id": attempt_id, **work}
         elif args.command == "records":
             result = Store(args.db).current()
         elif args.command == "queue":
@@ -82,4 +141,4 @@ def main(argv: list[str] | None = None) -> int:
         print("error: Database operation failed; check its location, permissions and concurrent writers.", file=sys.stderr)
         return 1
     print(json.dumps(result, ensure_ascii=False))
-    return 0
+    return 128 + result["signal"] if isinstance(result, dict) and result.get("signal") else 0

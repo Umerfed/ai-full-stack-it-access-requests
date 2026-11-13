@@ -1,7 +1,7 @@
 # Northstar IT access request intake
 
-Work in progress: steps 1–4 provide an offline mock provider, validated extraction,
-persistent intake, version history and a human review queue.
+Work in progress: steps 1–5 provide an offline mock provider, validated extraction,
+persistent intake, a human review queue, concurrent workers and recovery commands.
 The build sequence and requirements are in [planning/plan.md](planning/plan.md)
 and [planning/spec.md](planning/spec.md); the assignment is in [CHALLENGE.md](CHALLENGE.md).
 
@@ -77,7 +77,7 @@ children. Every input filename needs an entry in the fixture map. Fixture paths
 are relative to that map. The sample map covers all 20 supplied messages. A mock fixture is
 explicitly assigned by filename and never infers facts from a message.
 
-`intake` persists each message independently, then sequentially processes current
+`intake` persists each message independently, then concurrently processes current
 pending work in the database, including jobs prepared by other operators. Its JSON
 summary reports the number of accepted inputs, their attempt IDs, and jobs claimed by this
 worker (including errors); use `records` to inspect outcomes. Add `--prepare-only`
@@ -96,7 +96,7 @@ earlier successful results remain in history with their earlier hashes/settings.
 `processing_state` is `pending`, `running`, `completed`, `error` or `superseded`.
 It describes extraction work, not the human review status. Completed attempts are
 retained; a newer revision supersedes unfinished older work, revoking its claim.
-Unchanged errors remain visible until explicit retry support arrives in step 5.
+Unchanged errors remain visible until an explicit retry creates a new attempt.
 
 The review queue applies the office policy in this order, after extraction
 validation. Every outcome requires human action; the application grants no access.
@@ -123,7 +123,9 @@ settings fingerprint. Routing and annotated extraction are committed in one
 transaction, and current/history records expose the same routing tuple. Queue
 reads use the persisted decision and never reroute old records using today's
 policy. Pending/running work appears as `pending`/`processing` with next action
-`await-extraction`, separate from completed review decisions.
+`await-extraction`, separate from completed review decisions. Expired running
+claims display `interrupted` with `resume-processing`; queue items include lease
+expiry and claim count for handover.
 
 This implementation supports routing version `1`, pipeline `4.0`, and the supplied
 office policy (SHA-256 `b949596765aef45377d9f8d0792f9113109b1f811ef4f3be26919c162e1f631a`).
@@ -142,18 +144,93 @@ needs fresh intake. Avoid running older application versions against an upgraded
 Multiple operator processes can share one SQLite file **on a single machine's local
 disk**. WAL permits readers while writes proceed, writes use short transactions
 with a five-second busy timeout, and model calls run outside transactions.
-Claim tokens and 60-second leases guard completion; an expired or superseded
-worker cannot publish. Step 3 does not renew/recover expired leases or retry
-provider errors automatically. If interrupted after preparation but before a
-claim, rerun intake to process pending jobs; recovery of claimed work is step 5.
+Claim tokens and renewable leases guard completion; an expired or superseded
+worker cannot publish. A heartbeat renews active work while model calls, rate
+waits and backoff are in progress. Recovery only requeues expired current claims.
 Do not claim support for network-filesystem storage or multiple application hosts.
 Keep the database and its SQLite sidecar files together during operation; `var/`
 is ignored by Git. Prefer SQLite's backup facility for a live database backup.
 
+Resume pending work and recover claims left by a stopped process:
+
+```bash
+python3 -m it_access resume --db var/intake.db --workers 4
+```
+
+`resume` checks for expired claims once at startup, then drains available work.
+It reuses completed results and leaves finalized errors for explicit retry. Live
+claims stay with their owners. After an abrupt exit, wait for the recorded lease
+to expire and run `resume` again if an initial command reports unfinished work.
+
+Create a new attempt for a completed or failed document, keeping the previous
+result and its source/configuration in history:
+
+```bash
+python3 -m it_access retry IT-010.json --db var/intake.db
+python3 -m it_access history IT-010.json --db var/intake.db
+```
+
+Retry uses the current attempt's saved source/configuration; use fresh `intake`
+for changed source files or model/policy settings. Pending/running documents must
+use `resume`, and overlapping retry commands cannot create duplicate pending
+attempts. `retry --prepare-only` creates the new attempt without running it;
+otherwise retry processes only that document. The new attempt is current
+immediately; a failed retry shows error/null extraction while earlier success
+stays in history. For reproducible mock failure/success examples, `retry` also
+accepts `--fixture tests/mock_responses/refusal.json` or an explicit success fixture.
+
+Intake, resume and retry accept these worker controls:
+
+| Flag | Default | Meaning |
+|---|---:|---|
+| `--workers` | 4 | Concurrent jobs per process; allowed range 1–32 |
+| `--timeout-seconds` | 30 | Timeout passed to each provider transport |
+| `--max-attempts` | 3 | Provider-call budget for one durable attempt, including calls before a resume; range 1–10 |
+| `--lease-seconds` | 60 | Renewable ownership lease |
+| `--backoff-seconds` | 1 | Initial exponential retry delay, with jitter |
+| `--max-backoff-seconds` | 30 | Maximum automatic retry wait |
+| `--requests-per-minute` | 0 | Shared provider/model spacing in this database; 0 disables spacing |
+
+Timeouts/leases must be finite and positive; backoff/rate values must be finite
+and nonnegative. Use leases comfortably longer than local database lock waits
+and scheduling pauses. All operators sharing a quota should use the same rate
+setting. This coordinates this database's workers only, not other internal tools
+using the provider. In the current mock-only setup no network quota is consumed.
+
+Provider timeouts, connection failures and explicitly retryable provider errors
+use bounded exponential backoff with jitter. `Retry-After` accepts seconds or an
+HTTP date and defers calls sharing the provider/model scope. A hint longer than
+the automatic wait budget produces a visible error with `retry_after_seconds`;
+it does not retry earlier than requested. Other queued calls still honor that
+shared cooldown, with interruptible waits. Refusals, incomplete responses, invalid
+JSON/schema/evidence and permanent provider errors require explicit follow-up.
+
+Provider-call reservations are recorded before invocation and count toward the
+durable attempt budget across restarts; a crash in that interval can consume a
+call slot without sending a request. A crash after sending may require another
+call on recovery; exactly-once external requests are not guaranteed. Explicit
+retry starts a fresh attempt/budget. Worker options, calls/failure codes, claims,
+recovery, release and final outcomes appear in each attempt's `history` events.
+Raw provider exception messages, credentials and claim tokens are excluded.
+Older database records have no retroactively invented event history.
+
+Ctrl+C/SIGINT and SIGTERM stop further work cooperatively, interrupt rate/backoff
+waits, and return unfinished owned work to pending after the current provider call
+returns. The command reports `interrupted`/`unfinished` and exits 130/143. Provider
+adapters must enforce their transport timeout: Python worker threads cannot safely
+preempt arbitrary blocking adapter code. Mock calls return immediately; live
+transport timeout enforcement is part of step 6. Process kills are recovered by
+lease expiry instead of the signal handler. Normal commands exit 0 even if some
+extractions produced error records; inspect the queue. Invalid commands/config or
+database errors exit nonzero. Unrecoverable infrastructure errors leave claims
+visible for later recovery.
+
 Step 3 evidence is in `planning/step-03-red.txt`, `planning/step-03-green.txt`, and
 `planning/step-03.md`. Step 4 evidence is in `planning/step-04.md`, its red/green test
 logs and its recorded mock queue. Independent expected routes and their source
-quotes are in `tests/expected/routing.json`. Retry/resume, live provider configuration,
-consistent deliverable exports and field-accuracy commands remain later steps.
+quotes are in `tests/expected/routing.json`. Step 5 tests, observed repairs and
+mock recovery outcomes are documented in `planning/step-05.md` and its supporting
+logs/observations. Live provider configuration, consistent deliverable exports and
+field-accuracy commands remain later steps.
 The facilitator-provided `API_KEY`
 will be used by the live integration. Do not commit credentials or environments.

@@ -1,0 +1,143 @@
+{
+  "response_source": "mock",
+  "provider": "mock",
+  "model": "fixture",
+  "pipeline_version": "4.0",
+  "routing_version": "1",
+  "worker_options": {
+    "workers": 4,
+    "timeout_seconds": 30,
+    "max_attempts": 3,
+    "lease_seconds": 60,
+    "backoff_seconds": 1,
+    "max_backoff_seconds": 30,
+    "requests_per_minute": 0
+  },
+  "commands": [
+    {
+      "args": [
+        "intake",
+        "materials/requests/IT-001.json",
+        "--fixture-map",
+        "tests/mock_responses/fixture-map.json",
+        "--db",
+        "<temporary>/intake.db"
+      ],
+      "exit_code": 0,
+      "result": {
+        "accepted": 1,
+        "attempt_ids": [
+          1
+        ],
+        "processed": 1,
+        "unfinished": 0,
+        "interrupted": false,
+        "signal": null
+      }
+    },
+    {
+      "args": [
+        "retry",
+        "IT-001.json",
+        "--fixture",
+        "tests/mock_responses/refusal.json",
+        "--db",
+        "<temporary>/intake.db"
+      ],
+      "exit_code": 0,
+      "result": {
+        "attempt_id": 2,
+        "processed": 1,
+        "unfinished": 0,
+        "interrupted": false,
+        "signal": null
+      }
+    },
+    {
+      "args": [
+        "retry",
+        "IT-001.json",
+        "--fixture",
+        "tests/mock_responses/complete-001.json",
+        "--db",
+        "<temporary>/intake.db"
+      ],
+      "exit_code": 0,
+      "result": {
+        "attempt_id": 3,
+        "processed": 1,
+        "unfinished": 0,
+        "interrupted": false,
+        "signal": null
+      }
+    },
+    {
+      "args": [
+        "resume",
+        "--db",
+        "<temporary>/intake.db"
+      ],
+      "exit_code": 0,
+      "result": {
+        "recovered": 1,
+        "processed": 1,
+        "unfinished": 0,
+        "interrupted": false,
+        "signal": null
+      }
+    }
+  ],
+  "failed_retry_history": [
+    {
+      "attempt_id": 1,
+      "status": "review",
+      "is_current": false
+    },
+    {
+      "attempt_id": 2,
+      "status": "error",
+      "is_current": true
+    }
+  ],
+  "final_queue": [
+    {
+      "document_id": "IT-001.json",
+      "attempt_id": 3,
+      "source_sha256": "102a69f8fbc3779ec19fb6c761ad34b0c9a001f845b8df3c808f5a79441fbb10",
+      "settings_fingerprint": "daf508536cb8e75a2c48b6b17f986a6a4ee459b8ab1e9d29d586435315934326",
+      "processing_state": "completed",
+      "status": "review",
+      "owner": "System Owner",
+      "next_action": "review-request",
+      "response_source": "mock",
+      "error": null,
+      "lease_until": null,
+      "claim_count": 1,
+      "request_id": "IT-001",
+      "issues": []
+    },
+    {
+      "document_id": "unfinished.json",
+      "attempt_id": 4,
+      "source_sha256": "102a69f8fbc3779ec19fb6c761ad34b0c9a001f845b8df3c808f5a79441fbb10",
+      "settings_fingerprint": "daf508536cb8e75a2c48b6b17f986a6a4ee459b8ab1e9d29d586435315934326",
+      "processing_state": "completed",
+      "status": "review",
+      "owner": "System Owner",
+      "next_action": "review-request",
+      "response_source": "mock",
+      "error": null,
+      "lease_until": null,
+      "claim_count": 2,
+      "request_id": "IT-001",
+      "issues": []
+    }
+  ],
+  "assertions": {
+    "failed_retry_preserves_success": true,
+    "failure_extraction_null": true,
+    "expired_claim_recovered": true,
+    "completed_work_reused": true,
+    "no_unfinished_jobs": true
+  }
+}
