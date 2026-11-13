@@ -1,12 +1,22 @@
 {
   "IT-001.json": "complete-001.json",
+  "IT-002.json": "complete-002.json",
   "IT-003.json": "missing-003.json",
   "IT-004.json": "conflict-004.json",
+  "IT-005.json": "withdrawal-005.json",
+  "IT-006.json": "override-006.json",
   "IT-007.json": "change-007.json",
   "IT-008.json": "corrected-008.json",
+  "IT-009.json": "missing-009.json",
   "IT-010.json": "missing-010.json",
   "IT-011.json": "relative-011.json",
+  "IT-012.json": "complete-012.json",
+  "IT-013.json": "complete-013.json",
+  "IT-014.json": "reversed-014.json",
   "IT-015.json": "corrected-015.json",
+  "IT-016.json": "mismatch-016.json",
+  "IT-017.json": "other-017.json",
+  "IT-018.json": "complete-018.json",
   "IT-019.json": "change-019.json",
   "IT-020.json": "conflict-020.json"
 }

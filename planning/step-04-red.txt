@@ -1,0 +1,67 @@
+test_t02_complete_request_has_source_facts (test_extraction.ExtractionContract.test_t02_complete_request_has_source_facts) ... ok
+test_t02_every_required_field_is_checked (test_extraction.ExtractionContract.test_t02_every_required_field_is_checked) ... ok
+test_t02_extra_fields_enums_and_array_items_are_checked (test_extraction.ExtractionContract.test_t02_extra_fields_enums_and_array_items_are_checked) ... ok
+test_t03_invalid_export_never_calls_provider (test_extraction.ExtractionContract.test_t03_invalid_export_never_calls_provider) ... ok
+test_t03_only_message_goes_to_provider_with_separate_instructions (test_extraction.ExtractionContract.test_t03_only_message_goes_to_provider_with_separate_instructions) ... ok
+test_t05_calendar_dates_must_be_iso_but_reversed_ranges_are_preserved (test_extraction.ExtractionContract.test_t05_calendar_dates_must_be_iso_but_reversed_ranges_are_preserved) ... ok
+test_t05_nonobject_duplicate_keys_and_nonfinite_json_are_rejected (test_extraction.ExtractionContract.test_t05_nonobject_duplicate_keys_and_nonfinite_json_are_rejected) ... ok
+test_t05_refusal_interruption_malformed_and_schema_failures (test_extraction.ExtractionContract.test_t05_refusal_interruption_malformed_and_schema_failures) ... ok
+test_t05_refusal_takes_priority_even_with_valid_output (test_extraction.ExtractionContract.test_t05_refusal_takes_priority_even_with_valid_output) ... ok
+test_t06_fabricated_empty_or_missing_quotes_are_rejected (test_extraction.ExtractionContract.test_t06_fabricated_empty_or_missing_quotes_are_rejected) ... ok
+test_t07_missing_facts_have_nulls_and_field_issues (test_extraction.ExtractionContract.test_t07_missing_facts_have_nulls_and_field_issues) ... ok
+test_t07_unexplained_nulls_and_empty_values_are_rejected (test_extraction.ExtractionContract.test_t07_unexplained_nulls_and_empty_values_are_rejected) ... ok
+test_t08_conflict_issue_cannot_accompany_a_resolved_value (test_extraction.ExtractionContract.test_t08_conflict_issue_cannot_accompany_a_resolved_value) ... ok
+test_t08_conflicts_remain_unresolved_with_both_alternatives (test_extraction.ExtractionContract.test_t08_conflicts_remain_unresolved_with_both_alternatives) ... ok
+test_t09_explicit_corrections_are_retained (test_extraction.ExtractionContract.test_t09_explicit_corrections_are_retained) ... ok
+test_t10_relative_dates_are_not_resolved_from_export_timestamp (test_extraction.ExtractionContract.test_t10_relative_dates_are_not_resolved_from_export_timestamp) ... ok
+test_t11_change_requests_use_requested_new_permission (test_extraction.ExtractionContract.test_t11_change_requests_use_requested_new_permission) ... ok
+test_t01_cli_can_replay_a_fixture (test_mock_provider.MockFoundation.test_t01_cli_can_replay_a_fixture) ... ok
+test_t01_cli_missing_fixture_has_no_traceback (test_mock_provider.MockFoundation.test_t01_cli_missing_fixture_has_no_traceback) ... ok
+test_t01_invalid_fixture_has_a_clear_error (test_mock_provider.MockFoundation.test_t01_invalid_fixture_has_a_clear_error) ... ok
+test_t01_missing_fixture_fails_without_fallback (test_mock_provider.MockFoundation.test_t01_missing_fixture_fails_without_fallback) ... ok
+test_t01_replaying_a_fixture_does_not_extract_from_the_message (test_mock_provider.MockFoundation.test_t01_replaying_a_fixture_does_not_extract_from_the_message) ... ok
+test_t01_saved_reply_is_returned_offline_and_labeled_mock (test_mock_provider.MockFoundation.test_t01_saved_reply_is_returned_offline_and_labeled_mock) ... ok
+test_routing (unittest.loader._FailedTest.test_routing) ... ERROR
+test_a_mock_reply_is_read_with_no_key_and_no_network (test_starter.MockResponse.test_a_mock_reply_is_read_with_no_key_and_no_network) ... ok
+test_each_request_export_has_message_text_and_a_hash (test_starter.SuppliedFiles.test_each_request_export_has_message_text_and_a_hash) ... ok
+test_the_schema_names_the_fields_it_requires (test_starter.SuppliedFiles.test_the_schema_names_the_fields_it_requires) ... ok
+test_t04_cli_intake_records_and_history (test_storage.DurableIntake.test_t04_cli_intake_records_and_history) ... ok
+test_t04_filename_and_original_bytes_determine_identity_and_hash (test_storage.DurableIntake.test_t04_filename_and_original_bytes_determine_identity_and_hash) ... ok
+test_t04_prepare_only_leaves_work_pending (test_storage.DurableIntake.test_t04_prepare_only_leaves_work_pending) ... ok
+test_t13_same_business_id_in_two_files_keeps_two_documents (test_storage.DurableIntake.test_t13_same_business_id_in_two_files_keeps_two_documents) ... ok
+test_t23_claim_is_exclusive_and_completed_attempt_cannot_be_overwritten (test_storage.DurableIntake.test_t23_claim_is_exclusive_and_completed_attempt_cannot_be_overwritten) ... ok
+test_t23_failed_new_attempt_does_not_restore_older_success (test_storage.DurableIntake.test_t23_failed_new_attempt_does_not_restore_older_success) ... ok
+test_t23_new_revision_rejects_old_worker_completion (test_storage.DurableIntake.test_t23_new_revision_rejects_old_worker_completion) ... ok
+test_t23_two_processes_ingest_and_process_the_same_source_once (test_storage.DurableIntake.test_t23_two_processes_ingest_and_process_the_same_source_once) ... ok
+test_t23_two_processes_with_different_documents_preserve_both (test_storage.DurableIntake.test_t23_two_processes_with_different_documents_preserve_both) ... ok
+test_t23_wrong_token_or_expired_claim_cannot_publish (test_storage.DurableIntake.test_t23_wrong_token_or_expired_claim_cannot_publish) ... ok
+test_t25_pending_rerun_does_not_duplicate_jobs_and_survives_reopen (test_storage.DurableIntake.test_t25_pending_rerun_does_not_duplicate_jobs_and_survives_reopen) ... ok
+test_t25_unchanged_rerun_reuses_completed_result_without_provider_call (test_storage.DurableIntake.test_t25_unchanged_rerun_reuses_completed_result_without_provider_call) ... ok
+test_t26_changed_source_retains_old_hash_and_extraction (test_storage.DurableIntake.test_t26_changed_source_retains_old_hash_and_extraction) ... ok
+test_t26_each_relevant_setting_creates_a_new_revision (test_storage.DurableIntake.test_t26_each_relevant_setting_creates_a_new_revision) ... ok
+test_t26_prepared_source_and_fixture_survive_later_file_changes (test_storage.DurableIntake.test_t26_prepared_source_and_fixture_survive_later_file_changes) ... ok
+test_t26_prior_success_remains_when_source_reverts (test_storage.DurableIntake.test_t26_prior_success_remains_when_source_reverts) ... ok
+test_t26_settings_key_order_is_irrelevant_and_snapshot_is_detached (test_storage.DurableIntake.test_t26_settings_key_order_is_irrelevant_and_snapshot_is_detached) ... ok
+test_t26_source_bytes_change_even_when_decoded_json_is_identical (test_storage.DurableIntake.test_t26_source_bytes_change_even_when_decoded_json_is_identical) ... ok
+test_t26_worker_uses_ingested_source_and_configuration_snapshots (test_storage.DurableIntake.test_t26_worker_uses_ingested_source_and_configuration_snapshots) ... ok
+test_t27_subset_batch_never_withdraws_absent_documents (test_storage.DurableIntake.test_t27_subset_batch_never_withdraws_absent_documents) ... ok
+
+======================================================================
+ERROR: test_routing (unittest.loader._FailedTest.test_routing)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_routing
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/unittest/loader.py", line 394, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/unittest/loader.py", line 337, in _get_module_from_name
+    __import__(name)
+  File "/home/user/ai-full-stack-it-access-requests/tests/test_routing.py", line 17, in <module>
+    from it_access.routing import prepare_review
+ModuleNotFoundError: No module named 'it_access.routing'
+
+
+----------------------------------------------------------------------
+Ran 47 tests in 0.986s
+
+FAILED (errors=1)
