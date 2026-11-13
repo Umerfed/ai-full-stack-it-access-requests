@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests/mock_responses/complete-001.json"
 
 
-class MockFoundation(unittest.TestCase):
+class OfflineTestCase(unittest.TestCase):
     def setUp(self):
         self.enterContext(mock.patch.dict(os.environ))
         os.environ.pop("API_KEY", None)
@@ -28,6 +28,8 @@ class MockFoundation(unittest.TestCase):
             socket, "create_connection", side_effect=AssertionError("unexpected network access")
         ))
 
+
+class MockFoundation(OfflineTestCase):
     def test_t01_saved_reply_is_returned_offline_and_labeled_mock(self):
         message = json.loads((ROOT / "materials/requests/IT-001.json").read_text())["message"]
         response = MockProvider(FIXTURE).complete(message)

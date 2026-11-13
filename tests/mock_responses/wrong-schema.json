@@ -1,0 +1,6 @@
+{
+  "response_source": "mock",
+  "status": "completed",
+  "refusal": null,
+  "output_text": "{\"request_id\":\"IT-001\"}"
+}
