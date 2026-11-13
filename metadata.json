@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.13.3",
+  "checkpoint_id": "01M7BMVE71G1X9WTTV14G883BD",
+  "strategy": "manual-commit",
+  "checkpoints_count": 24,
+  "files_touched": null,
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 262389,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 32582272,
+    "output_tokens": 226876,
+    "api_call_count": 147
+  },
+  "redaction": {
+    "replacements": 312,
+    "layers": {
+      "betterleaks": 4,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 57,
+      "credentialed_uri": 4,
+      "entropy": 258,
+      "key_context": 0,
+      "pii": 6,
+      "provider_token": 1,
+      "shell_stdin": 0
+    },
+    "pii": {
+      "EMAIL": 6,
+      "IP": 0,
+      "PHONE": 0
+    }
+  },
+  "linked_commits": [
+    {
+      "sha": "ac611f75d48cf7364ee268738d526096651ad637",
+      "repo": "gh/Umerfed/ai-full-stack-it-access-requests"
+    }
+  ]
+}
