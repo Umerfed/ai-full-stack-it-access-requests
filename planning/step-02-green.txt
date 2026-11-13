@@ -1,0 +1,31 @@
+test_t02_complete_request_has_source_facts (test_extraction.ExtractionContract.test_t02_complete_request_has_source_facts) ... ok
+test_t02_every_required_field_is_checked (test_extraction.ExtractionContract.test_t02_every_required_field_is_checked) ... ok
+test_t02_extra_fields_enums_and_array_items_are_checked (test_extraction.ExtractionContract.test_t02_extra_fields_enums_and_array_items_are_checked) ... ok
+test_t03_invalid_export_never_calls_provider (test_extraction.ExtractionContract.test_t03_invalid_export_never_calls_provider) ... ok
+test_t03_only_message_goes_to_provider_with_separate_instructions (test_extraction.ExtractionContract.test_t03_only_message_goes_to_provider_with_separate_instructions) ... ok
+test_t05_calendar_dates_must_be_iso_but_reversed_ranges_are_preserved (test_extraction.ExtractionContract.test_t05_calendar_dates_must_be_iso_but_reversed_ranges_are_preserved) ... ok
+test_t05_nonobject_duplicate_keys_and_nonfinite_json_are_rejected (test_extraction.ExtractionContract.test_t05_nonobject_duplicate_keys_and_nonfinite_json_are_rejected) ... ok
+test_t05_refusal_interruption_malformed_and_schema_failures (test_extraction.ExtractionContract.test_t05_refusal_interruption_malformed_and_schema_failures) ... ok
+test_t05_refusal_takes_priority_even_with_valid_output (test_extraction.ExtractionContract.test_t05_refusal_takes_priority_even_with_valid_output) ... ok
+test_t06_fabricated_empty_or_missing_quotes_are_rejected (test_extraction.ExtractionContract.test_t06_fabricated_empty_or_missing_quotes_are_rejected) ... ok
+test_t07_missing_facts_have_nulls_and_field_issues (test_extraction.ExtractionContract.test_t07_missing_facts_have_nulls_and_field_issues) ... ok
+test_t07_unexplained_nulls_and_empty_values_are_rejected (test_extraction.ExtractionContract.test_t07_unexplained_nulls_and_empty_values_are_rejected) ... ok
+test_t08_conflict_issue_cannot_accompany_a_resolved_value (test_extraction.ExtractionContract.test_t08_conflict_issue_cannot_accompany_a_resolved_value) ... ok
+test_t08_conflicts_remain_unresolved_with_both_alternatives (test_extraction.ExtractionContract.test_t08_conflicts_remain_unresolved_with_both_alternatives) ... ok
+test_t09_explicit_corrections_are_retained (test_extraction.ExtractionContract.test_t09_explicit_corrections_are_retained) ... ok
+test_t10_relative_dates_are_not_resolved_from_export_timestamp (test_extraction.ExtractionContract.test_t10_relative_dates_are_not_resolved_from_export_timestamp) ... ok
+test_t11_change_requests_use_requested_new_permission (test_extraction.ExtractionContract.test_t11_change_requests_use_requested_new_permission) ... ok
+test_t01_cli_can_replay_a_fixture (test_mock_provider.MockFoundation.test_t01_cli_can_replay_a_fixture) ... ok
+test_t01_cli_missing_fixture_has_no_traceback (test_mock_provider.MockFoundation.test_t01_cli_missing_fixture_has_no_traceback) ... ok
+test_t01_invalid_fixture_has_a_clear_error (test_mock_provider.MockFoundation.test_t01_invalid_fixture_has_a_clear_error) ... ok
+test_t01_missing_fixture_fails_without_fallback (test_mock_provider.MockFoundation.test_t01_missing_fixture_fails_without_fallback) ... ok
+test_t01_replaying_a_fixture_does_not_extract_from_the_message (test_mock_provider.MockFoundation.test_t01_replaying_a_fixture_does_not_extract_from_the_message) ... ok
+test_t01_saved_reply_is_returned_offline_and_labeled_mock (test_mock_provider.MockFoundation.test_t01_saved_reply_is_returned_offline_and_labeled_mock) ... ok
+test_a_mock_reply_is_read_with_no_key_and_no_network (test_starter.MockResponse.test_a_mock_reply_is_read_with_no_key_and_no_network) ... ok
+test_each_request_export_has_message_text_and_a_hash (test_starter.SuppliedFiles.test_each_request_export_has_message_text_and_a_hash) ... ok
+test_the_schema_names_the_fields_it_requires (test_starter.SuppliedFiles.test_the_schema_names_the_fields_it_requires) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 0.046s
+
+OK

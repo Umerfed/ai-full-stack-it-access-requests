@@ -23,7 +23,7 @@ class ModelResponse:
 
 
 class Provider(Protocol):
-    def complete(self, message: str) -> ModelResponse:
+    def complete(self, message: str, *, instructions: str = "") -> ModelResponse:
         """Return a response envelope; callers must validate before using it."""
         ...
 
@@ -34,7 +34,7 @@ class MockProvider:
     def __init__(self, fixture_path: str | Path):
         self.fixture_path = Path(fixture_path)
 
-    def complete(self, message: str) -> ModelResponse:
+    def complete(self, message: str, *, instructions: str = "") -> ModelResponse:
         # Message is deliberately ignored: fixtures are explicitly selected.
         try:
             raw = self.fixture_path.read_text(encoding="utf-8")

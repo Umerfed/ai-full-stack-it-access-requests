@@ -22,7 +22,8 @@ No live provider call, extraction-schema validation, routing, database intake or
 accuracy measurement is claimed by this step. Fixture-envelope checks only
 establish the provider contract. Completion/refusal handling belongs to step 2.
 
-The failing test was run before implementation, but these changes have not been
-committed. The saved logs are working-tree evidence, not the separate test-first
-Git commits described in the course guide. Do not claim that commit ordering was
-established retroactively. No changes were made to the existing capture settings.
+At step 1 completion the changes were uncommitted. They were subsequently
+committed as `54d7fcd`, after the spec/plan commit `dcc65f0`. The saved logs are
+evidence of a failing run before implementation, but step 1 has no separate
+test-first Git commit. Do not claim that commit ordering was established
+retroactively. No changes were made to the existing capture settings.
