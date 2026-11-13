@@ -166,6 +166,7 @@ class HTTPTransport(OfflineTestCase):
         response.status = status
         response.getheaders.return_value = [("Retry-After", "2")]
         response.read1.side_effect = chunks if chunks is not None else [wire().body, b""]
+        response.isclosed.return_value = False
         return connection
 
     def test_t30_https_post_verifies_tls_sends_auth_once_and_enforces_socket_timeout(self):
@@ -206,6 +207,23 @@ class HTTPTransport(OfflineTestCase):
         with mock.patch("it_access.openai_provider.http.client.HTTPSConnection", return_value=connection):
             with self.assertRaises(ProviderError):
                 post_response({}, api_key=SECRET, timeout_seconds=1)
+        connection.close.assert_called_once()
+
+    def test_t30_watchdog_interrupts_a_blocked_connected_read(self):
+        connection = self.connection()
+        interrupted = __import__("threading").Event()
+        connection.sock.shutdown.side_effect = lambda how: interrupted.set()
+
+        def blocked_read(size):
+            if not interrupted.wait(1):
+                self.fail("Socket deadline watchdog did not fire")
+            raise OSError("fabricated socket shutdown")
+
+        connection.getresponse.return_value.read1.side_effect = blocked_read
+        with mock.patch("it_access.openai_provider.http.client.HTTPSConnection", return_value=connection):
+            with self.assertRaises(TimeoutError):
+                post_response({}, api_key=SECRET, timeout_seconds=0.05)
+        connection.sock.shutdown.assert_called_once()
         connection.close.assert_called_once()
 
 
@@ -268,6 +286,25 @@ class LiveIntegration(OfflineTestCase):
         evidence = json.loads(target.read_text())
         self.assertEqual(evidence["request"]["body"]["model"], DEFAULT_MODEL)
         self.assertEqual(evidence["observation"], "request-example-not-sent")
+
+    def test_t31_cli_evidence_body_matches_the_actual_intake_wire_request(self):
+        target = self.directory / "request-evidence.json"
+        with redirect_stdout(io.StringIO()):
+            main(["request-evidence", str(ROOT / "materials/requests/IT-001.json"), "--out", str(target)])
+        with mock.patch.dict(os.environ, {"API_KEY": SECRET}), \
+             mock.patch("it_access.openai_provider.post_response", return_value=wire()) as transport, redirect_stdout(io.StringIO()):
+            main(["intake", str(ROOT / "materials/requests/IT-001.json"), "--provider", "openai", "--db", str(self.db)])
+        self.assertEqual(json.loads(target.read_text())["request"]["body"], transport.call_args.args[0])
+
+    def test_t31_mock_only_resume_does_not_call_a_pending_live_provider(self):
+        raw = (ROOT / "materials/requests/IT-001.json").read_bytes()
+        self.store.ingest("live.json", raw, processing_settings(provider="openai"))
+        self.store.ingest("mock.json", raw, processing_settings(mock_reply=(ROOT / "tests/mock_responses/complete-001.json").read_text()))
+        with redirect_stdout(io.StringIO()), mock.patch("it_access.openai_provider.post_response") as transport:
+            main(["resume", "--provider", "mock", "--db", str(self.db)])
+        transport.assert_not_called()
+        states = {row["document_id"]: row["processing_state"] for row in self.store.current()}
+        self.assertEqual(states, {"live.json": "pending", "mock.json": "completed"})
 
     def test_t31_invalid_generation_options_fail_before_creating_attempts(self):
         for options in (["--max-output-tokens", "0"], ["--reasoning-effort", "invalid"], ["--model", "bad model"]):
