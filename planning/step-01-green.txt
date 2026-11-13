@@ -1,0 +1,14 @@
+test_t01_cli_can_replay_a_fixture (test_mock_provider.MockFoundation.test_t01_cli_can_replay_a_fixture) ... ok
+test_t01_cli_missing_fixture_has_no_traceback (test_mock_provider.MockFoundation.test_t01_cli_missing_fixture_has_no_traceback) ... ok
+test_t01_invalid_fixture_has_a_clear_error (test_mock_provider.MockFoundation.test_t01_invalid_fixture_has_a_clear_error) ... ok
+test_t01_missing_fixture_fails_without_fallback (test_mock_provider.MockFoundation.test_t01_missing_fixture_fails_without_fallback) ... ok
+test_t01_replaying_a_fixture_does_not_extract_from_the_message (test_mock_provider.MockFoundation.test_t01_replaying_a_fixture_does_not_extract_from_the_message) ... ok
+test_t01_saved_reply_is_returned_offline_and_labeled_mock (test_mock_provider.MockFoundation.test_t01_saved_reply_is_returned_offline_and_labeled_mock) ... ok
+test_a_mock_reply_is_read_with_no_key_and_no_network (test_starter.MockResponse.test_a_mock_reply_is_read_with_no_key_and_no_network) ... ok
+test_each_request_export_has_message_text_and_a_hash (test_starter.SuppliedFiles.test_each_request_export_has_message_text_and_a_hash) ... ok
+test_the_schema_names_the_fields_it_requires (test_starter.SuppliedFiles.test_the_schema_names_the_fields_it_requires) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.015s
+
+OK
