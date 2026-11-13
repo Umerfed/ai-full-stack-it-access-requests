@@ -217,7 +217,7 @@ class Store:
                 ]
             return records
 
-    def claim(self, *, lease_seconds: float = 60, document_id: str | None = None) -> Claim | None:
+    def claim(self, *, lease_seconds: float = 60, document_id: str | None = None, provider_name: str | None = None) -> Claim | None:
         """Exclusively claim current pending work with a fresh fencing token."""
         if not math.isfinite(lease_seconds) or lease_seconds <= 0:
             raise ValueError("lease_seconds must be positive.")
@@ -225,7 +225,8 @@ class Store:
             row = connection.execute(
                 "SELECT a.* FROM documents d JOIN attempts a ON a.attempt_id=d.current_attempt_id "
                 "WHERE a.processing_state='pending' AND (? IS NULL OR a.document_id=?) "
-                "ORDER BY a.attempt_id LIMIT 1", (document_id, document_id)
+                "AND (? IS NULL OR json_extract(a.settings_json,'$.provider')=?) "
+                "ORDER BY a.attempt_id LIMIT 1", (document_id, document_id, provider_name, provider_name)
             ).fetchone()
             if row is None:
                 return None

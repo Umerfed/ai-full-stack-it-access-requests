@@ -1,9 +1,9 @@
 """T30/T31: documented REST contract, mocked transport, no real credentials."""
-import copy
 import io
 import json
 import os
 import ssl
+import threading
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -211,7 +211,7 @@ class HTTPTransport(OfflineTestCase):
 
     def test_t30_watchdog_interrupts_a_blocked_connected_read(self):
         connection = self.connection()
-        interrupted = __import__("threading").Event()
+        interrupted = threading.Event()
         connection.sock.shutdown.side_effect = lambda how: interrupted.set()
 
         def blocked_read(size):

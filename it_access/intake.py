@@ -10,9 +10,10 @@ from dataclasses import asdict, dataclass
 from email.utils import parsedate_to_datetime
 
 from it_access.extraction import (
-    ExtractionError, POLICY_PATH, PROMPT_PATH, SCHEMA_PATH, message_from_export, validate_response,
+    ExtractionError, POLICY_PATH, PROMPT_PATH, SCHEMA_PATH, message_from_export, validate_response, instructions_from_settings,
 )
-from it_access.providers import MockProvider, ProviderError
+from it_access.providers import MockProvider, ProviderError, PROVIDER_ERROR_MESSAGES
+from it_access.openai_provider import DEFAULT_MODEL, ENDPOINT, REQUEST_VERSION, OpenAIProvider, validate_configuration
 from it_access.routing import PIPELINE_VERSION, ROUTING_VERSION, check_routing_settings
 from it_access.storage import Store
 
@@ -38,22 +39,32 @@ class WorkerOptions:
                 raise ValueError(f"{field} must be finite and {'positive' if field in {'timeout_seconds', 'lease_seconds'} else 'nonnegative'}.")
 
 
-def processing_settings(*, provider="mock", model="fixture", generation=None, mock_reply=None) -> dict:
+def processing_settings(*, provider="mock", model=None, generation=None, mock_reply=None) -> dict:
     """Fingerprint output-affecting inputs; credentials never belong in settings."""
-    return {
+    if model is None:
+        model = DEFAULT_MODEL if provider == "openai" else "fixture"
+    if generation is None:
+        generation = {"max_output_tokens": 4096, "reasoning_effort": "none"} if provider == "openai" else {}
+    settings = {
         "pipeline_version": PIPELINE_VERSION,
         "routing_version": ROUTING_VERSION,
         "provider": provider,
         "model": model,
-        "generation": {} if generation is None else generation,
+        "generation": generation,
         "prompt": PROMPT_PATH.read_text(encoding="utf-8"),
         "policy": POLICY_PATH.read_text(encoding="utf-8"),
         "schema": json.loads(SCHEMA_PATH.read_text(encoding="utf-8")),
         "mock_reply": mock_reply,
     }
+    if provider == "openai":
+        settings["provider_config"] = {"endpoint": ENDPOINT, "request_version": REQUEST_VERSION}
+        validate_configuration(settings)
+    return settings
 
 
 def _provider(settings):
+    if settings["provider"] == "openai":
+        return OpenAIProvider(settings)
     if settings["provider"] != "mock" or not isinstance(settings["mock_reply"], str):
         raise ProviderError("No supported provider response configured for this attempt.")
     return MockProvider(fixture_text=settings["mock_reply"])
@@ -144,14 +155,16 @@ def _call_provider(store, claim, provider, message, instructions, options, stop,
         except ConnectionError:
             code, retryable, hint = "provider-unavailable", True, None
         except ProviderError as exc:
-            code = "provider-rate-limit" if exc.retry_after is not None else "provider-error"
+            code = exc.code if isinstance(exc.code, str) and exc.code in PROVIDER_ERROR_MESSAGES else "provider-error"
+            if code == "provider-error" and exc.retry_after is not None:
+                code = "provider-rate-limit"
             retryable = exc.retryable
             hint = _retry_after(exc.retry_after, store.clock())
         except Exception:
             # Limit sanitization to the provider boundary, not database/program
             # failures elsewhere. Never persist arbitrary exception text.
             code, retryable, hint = "provider-error", False, None
-        error = {"code": code, "message": "Provider extraction failed; inspect configuration/service availability and retry.",
+        error = {"code": code, "message": PROVIDER_ERROR_MESSAGES.get(code, "Provider extraction failed; inspect configuration/service availability and retry."),
                  "provider_calls": number}
         if hint is not None:
             error["retry_after_seconds"] = hint
@@ -168,13 +181,13 @@ def _call_provider(store, claim, provider, message, instructions, options, stop,
     raise AssertionError("Unreachable retry loop")
 
 
-def process_next(store: Store, *, provider_factory=None, options=None, stop_event=None, document_id=None) -> bool:
+def process_next(store: Store, *, provider_factory=None, options=None, stop_event=None, document_id=None, provider_name=None) -> bool:
     """Process one claimed job; retries stay within its durable attempt."""
     options = options or WorkerOptions()
     stop = stop_event if stop_event is not None else threading.Event()
     if stop.is_set():
         return False
-    claim = store.claim(lease_seconds=options.lease_seconds, document_id=document_id)
+    claim = store.claim(lease_seconds=options.lease_seconds, document_id=document_id, provider_name=provider_name)
     if claim is None:
         return False
     settings = claim.settings
@@ -190,9 +203,12 @@ def process_next(store: Store, *, provider_factory=None, options=None, stop_even
             message = message_from_export(exported)
             try:
                 provider = (provider_factory or _provider)(settings)
+            except ProviderError as exc:
+                code = exc.code if isinstance(exc.code, str) and exc.code in PROVIDER_ERROR_MESSAGES else "provider-error"
+                raise _ProviderFailure({"code": code, "message": PROVIDER_ERROR_MESSAGES[code]}) from None
             except Exception:
                 raise _ProviderFailure({"code": "provider-error", "message": "Provider configuration failed; inspect settings and retry."}) from None
-            trusted_instructions = "\n\n".join((settings["prompt"], settings["policy"], json.dumps(settings["schema"])))
+            trusted_instructions = instructions_from_settings(settings)
             response = _call_provider(store, claim, provider, message, trusted_instructions, options, stop, lost)
             extraction = validate_response(response, message, schema=settings["schema"])
             _check_stop(stop, lost)
@@ -206,7 +222,7 @@ def process_next(store: Store, *, provider_factory=None, options=None, stop_even
     return True
 
 
-def run_pending(store: Store, *, provider_factory=None, options=None, stop_event=None, document_id=None) -> int:
+def run_pending(store: Store, *, provider_factory=None, options=None, stop_event=None, document_id=None, provider_name=None) -> int:
     """Drain available work with bounded threads and prompt per-document commits.
 
     Shared claims fence overlapping schedulers. Cooperative stop returns unfinished
@@ -218,7 +234,7 @@ def run_pending(store: Store, *, provider_factory=None, options=None, stop_event
     def worker():
         count = 0
         while not stop.is_set() and process_next(store, provider_factory=provider_factory, options=options,
-                                                 stop_event=stop, document_id=document_id):
+                                                 stop_event=stop, document_id=document_id, provider_name=provider_name):
             count += 1
         return count
 

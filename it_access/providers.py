@@ -13,10 +13,24 @@ from typing import Protocol
 class ProviderError(Exception):
     """An actionable provider failure without raw response or credential data."""
 
-    def __init__(self, message: str, *, retryable: bool = False, retry_after=None):
+    def __init__(self, message: str, *, retryable: bool = False, retry_after=None, code: str = "provider-error"):
         super().__init__(message)
         self.retryable = retryable
         self.retry_after = retry_after
+        self.code = code
+
+
+PROVIDER_ERROR_MESSAGES = {
+    "provider-error": "Provider extraction failed; inspect configuration/service availability and retry.",
+    "provider-rate-limit": "Provider rate limit reached; follow the recorded cooldown and reduce the request rate.",
+    "missing-api-key": "API_KEY is missing; set it in the operator environment before retrying.",
+    "authentication-error": "Provider authentication failed; check API_KEY before retrying.",
+    "permission-error": "Provider denied access; check the API project and model permissions.",
+    "model-unavailable": "Provider model was not found; verify MODEL_ID and refresh intake settings.",
+    "quota-exceeded": "Provider quota or spend limit is exhausted; resolve it before an explicit retry.",
+    "invalid-provider-request": "Provider rejected the request; check model/parameter compatibility before refreshing intake.",
+    "invalid-provider-response": "Provider returned an invalid response envelope; inspect the integration before retrying.",
+}
 
 
 @dataclass(frozen=True)

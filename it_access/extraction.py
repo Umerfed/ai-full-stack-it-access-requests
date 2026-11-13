@@ -29,11 +29,16 @@ class ExtractionError(Exception):
 
 def instructions() -> str:
     """Keep trusted instructions separate from the message sent to a provider."""
-    return "\n\n".join((
-        PROMPT_PATH.read_text(encoding="utf-8"),
-        POLICY_PATH.read_text(encoding="utf-8"),
-        SCHEMA_PATH.read_text(encoding="utf-8"),
-    ))
+    return instructions_from_settings({
+        "prompt": PROMPT_PATH.read_text(encoding="utf-8"),
+        "policy": POLICY_PATH.read_text(encoding="utf-8"),
+        "schema": json.loads(SCHEMA_PATH.read_text(encoding="utf-8")),
+    })
+
+
+def instructions_from_settings(settings: dict) -> str:
+    """Canonical formatting shared by saved jobs and request evidence."""
+    return "\n\n".join((settings["prompt"], settings["policy"], json.dumps(settings["schema"], sort_keys=True)))
 
 
 def _unique_object(pairs):
