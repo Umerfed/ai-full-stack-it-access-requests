@@ -200,6 +200,25 @@ class DurableIntake(OfflineTestCase):
         self.assertEqual(records[0]["claim_count"], 1)
         self.assertEqual(len(Store(db).history("IT-001.json")), 1)
 
+    def test_t23_two_processes_with_different_documents_preserve_both(self):
+        context = multiprocessing.get_context("fork")
+        barrier = context.Barrier(2)
+        db = self.directory / "different.db"
+        second = self.directory / "followup.json"
+        second.write_bytes(SOURCE.read_bytes())
+        processes = [context.Process(target=shared_operator,
+                     args=(db, path, self.settings, barrier)) for path in (SOURCE, second)]
+        for process in processes:
+            process.start()
+            self.addCleanup(lambda p=process: p.kill() if p.is_alive() else None)
+        for process in processes:
+            process.join(timeout=15)
+            self.assertEqual(process.exitcode, 0)
+        records = Store(db).current()
+        self.assertEqual({r["document_id"] for r in records}, {"IT-001.json", "followup.json"})
+        self.assertTrue(all(r["processing_state"] == "completed" for r in records))
+        self.assertTrue(all(r["claim_count"] == 1 for r in records))
+
     def test_t23_failed_new_attempt_does_not_restore_older_success(self):
         self.ingest()
         run_pending(self.store)
@@ -234,3 +253,21 @@ class DurableIntake(OfflineTestCase):
             self.assertEqual(main(["intake", str(SOURCE), "--fixture-map", str(mapping),
                                    "--prepare-only", "--db", str(self.db)]), 0)
         self.assertEqual(self.store.current()[0]["processing_state"], "pending")
+
+    def test_t26_prepared_source_and_fixture_survive_later_file_changes(self):
+        source = self.directory / "IT-001.json"
+        fixture = self.directory / "reply.json"
+        mapping = self.directory / "fixtures.json"
+        source.write_bytes(SOURCE.read_bytes())
+        fixture.write_text(FIXTURE.read_text())
+        mapping.write_text(json.dumps({source.name: fixture.name}))
+        with redirect_stdout(io.StringIO()):
+            main(["intake", str(source), "--fixture-map", str(mapping),
+                  "--prepare-only", "--db", str(self.db)])
+        source.write_text("source was replaced after preparation")
+        fixture.write_text("fixture was replaced after preparation")
+        self.assertTrue(process_next(self.store))
+        record = self.store.current()[0]
+        self.assertEqual(record["source_sha256"], hashlib.sha256(SOURCE.read_bytes()).hexdigest())
+        self.assertEqual(record["extraction"]["end_date"], "2026-11-06")
+        self.assertEqual(record["processing_state"], "completed")
